@@ -11,16 +11,14 @@ full name, sex, birthdate, address, web address,
 email address etc. based on an existing contact list, name popularity data and
 basic demographics
 
-Generates either a CSV file of fake people or a continuous stream of fake people.
+Generates either a CSV file or a continuous stream of realistic but random personal data
+
 Random data is based on obfuscated real-world addresses
 
 An ordinary contact list can be dropped into the generator unchanged
 to act as model data-- you can use your own address book to generate realistic
 contact details. The initial file format is Outlook export CSV but can easily be
 modified for other sources
-
-Additional data about a person might be passed through from the contact list or
-the name frequency tables, e.g. job title, notes, favourite sport, spouse name.
 
 Obfuscations include:
   - all numbers in first line of address are changed
@@ -30,17 +28,18 @@ Obfuscations include:
   - birthdays are randomised (realistically)
 
 Performance:
-2000+ people per second (2GHz laptop). Binary search in RandomName.name might improve this
+Not bad. 2000+ people per second (2GHz laptop, 200 entries in address file)
 
 Use:
-Examples included at end of module
+See examples at end of module
 
 Future (Nov 2012):
-- With the right datafiles, could mix names from different nationalities and/or generate data for other
-  items such as organisation names, job titles, vegetable orders etc.
-- Could abstract the "choose item with weighting" currently called RandomNames away from people to
-  describe and generate other kinds of data like shopping cart orders, subclassing for each
-- Better unit testing
+- With the right datafiles, could mix names from different nationalities or demographics
+  (e.g. software developers, middle managers, single parents) and/or generate data for other
+  purposes such as organisation names, job titles, fruit and vegetable orders etc.
+- remove string literals from code (e.g. "First name")
+- Better unit testing:
+    check forenames and middle names match
 
 Updates:
 Nov 2012-- minor refactorings and code commenting
@@ -56,10 +55,13 @@ import random
 from filelinks import lookup_file, output_file, base_dir
 
 class RandomPersonException(BaseException):
+    """
+    any exception in the RandomPerson class
+    """
     pass
 
 class NameLookupException(RandomPersonException):
-    """used to flag errors in name files"""
+    """error in name/popularity input file"""
     pass
 
 class RandomName:
@@ -74,19 +76,19 @@ class RandomName:
     class MissingPopularityException(RandomNameException): pass
 
     def __init__(self, filename, name_fld="Name", namepopularity_fld="Common5"):
-        """populate name lookup table and prepare weightings"""
+        """populate name lookup table and prepare popularity weightings"""
         self.filename = filename
         self.name_fld = name_fld
         namelist = list(csv.DictReader(open(filename)))
         self.running_total_fld = "rn_runningTotal"
-        self.namepopularity_fld = namepopularity_fld
+        self.popularity_fld = namepopularity_fld
         running_total = 0.0
         # Weed out rows with blank name field (e.g. empty lines at end of file)
         self.namelist = [k for k in namelist if k[name_fld].strip(' \t\n\r')]
         for name_candidate in self.namelist:
             # Exponentiate 0-5 score for popularity
             try:
-                weight = math.exp(float(name_candidate[self.namepopularity_fld]))
+                popularity = math.exp(float(name_candidate[self.popularity_fld]))
             except:
                 raise self.MissingPopularityException(\
                     "Popularity should be 0..5 on name %s in file %s" % \
@@ -95,9 +97,10 @@ class RandomName:
             # a name that matches is the first (in a sorted list) whose running_total
             # is greater than a random number over an interval spanning all names
             # Names span a part of the whole interval proportional to their popularity
-            running_total += weight
+            running_total += popularity
             name_candidate[self.running_total_fld] = running_total
-        self.total_weight = running_total
+        # total_popularity used later to define range over which to choose a name
+        self.total_popularity = running_total
 
     def name(self):
         """
@@ -106,7 +109,7 @@ class RandomName:
         "Bartholomew" very rarely
         """
         # pick a random spot in the popularity interval over all words
-        pindrop = random.uniform(0.0, self.total_weight)
+        pindrop = random.uniform(0.0, self.total_popularity)
         # which word did that spot fall on? (Linear search)
         for name_candidate in self.namelist:
             if pindrop <= name_candidate[self.running_total_fld]:
@@ -129,11 +132,11 @@ class RandomPerson:
         """
         lookup_root specifies where to find lookup tables
         """
-        self.nameroot = lookup_root
+        self.lookup_root = lookup_root
         self.firstlineaddress_fld = "Street"
         self.website_fld = "Website"
         # separate generators for male and female names means lookup tables can
-        # be of different sizes and use different distributions of weighting
+        # be of different sizes and use different distributions of popularity weighting
         # without skewing the overall numbers of male and female names generated
         self.female_forename_generator = \
             RandomName(self.fp("Forenames_female.csv"), name_fld="Forename")
@@ -146,7 +149,7 @@ class RandomPerson:
 
     def fp(self, filename):
         """return full path of a filename by prepending root directory"""
-        return os.path.join(self.nameroot, filename)
+        return os.path.join(self.lookup_root, filename)
 
     def address(self, filename):
         """generator returning a random address"""

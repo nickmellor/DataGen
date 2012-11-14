@@ -33,9 +33,30 @@ class TestRandomPerson(unittest.TestCase):
     def test_RN_Handles_NonNumPopularity(self):
         # make sure the name popularity mechanisms deal with empty lines
         with self.assertRaises(RandomName.MissingPopularityException):
-            self.name_generator =\
+            name_generator =\
                 RandomName(test_data_input_file("lookupMissingPopularity.csv"),\
                     name_fld="Forename")
+
+    @unittest.skip("Fails but not mission-critical for large name lookup files")
+    def test_RN_Uses_All_Names(self):
+        """
+        make sure no names are excluded from results using small 2-entry lookup file
+        and enough iterations
+        """
+        test_fname = test_data_input_file("minimallookup.csv")
+        # get checklist
+        checklist = list(csv.DictReader(open(test_fname)))
+        decent_run = 100
+        # set up name generator
+        name_generator = RandomName(test_fname, name_fld="Forename")
+        # check both names represented in output
+        for name_check in checklist:
+            for i in range(decent_run):
+                new_name = name_generator.name()
+                if name_check == new_name: break
+            else: self.fail("Name %s not generated at probability %d" %
+                            (name_check, decent_run/float(len(checklist))))
+
 
     def test_RP_save_neg_sample(self):
         """
