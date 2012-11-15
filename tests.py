@@ -1,5 +1,6 @@
 __author__ = 'nick'
 
+import itertools
 import random
 import unittest
 import csv
@@ -37,25 +38,32 @@ class TestRandomPerson(unittest.TestCase):
                 RandomName(test_data_input_file("lookupMissingPopularity.csv"),\
                     name_fld="Forename")
 
-    @unittest.skip("Fails but not mission-critical for large name lookup files")
+    #@unittest.skip("Fails but not a problem for current uses")
     def test_RN_Uses_All_Names(self):
         """
-        make sure no names are excluded from results using small 2-entry lookup file
-        and enough iterations
+        test that RandomNames uses all available options.
+        Method: probabilistic test to make sure no names are excluded from results using
+        small lookup file with just a few items and enough iterations to make all items
+        extremely likely to be chosen at least once
         """
         test_fname = test_data_input_file("minimallookup.csv")
         # get checklist
         checklist = list(csv.DictReader(open(test_fname)))
+        # how many samples make it *extremely* unlikely that any item was not selected
+        # at least once?
         decent_run = 100
         # set up name generator
         name_generator = RandomName(test_fname, name_fld="Forename")
-        # check both names represented in output
+        # check all names are represented in output
         for name_check in checklist:
             for i in range(decent_run):
                 new_name = name_generator.name()
-                if name_check == new_name: break
-            else: self.fail("Name %s not generated at probability %d" %
-                            (name_check, decent_run/float(len(checklist))))
+                if name_check["Forename"] == new_name: break
+            else:
+                self.fail("Name %s (1 of %d) was not generated even after %d iterations"\
+                          % (name_check["Forename"],\
+                             len(name_generator.namelist),\
+                             decent_run))
 
 
     def test_RP_save_neg_sample(self):

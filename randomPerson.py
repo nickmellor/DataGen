@@ -28,7 +28,7 @@ Obfuscations include:
   - birthdays are randomised (realistically)
 
 Performance:
-Not bad. 2000+ people per second (2GHz laptop, 200 entries in address file)
+1000+ people per second (2GHz laptop, 200 entries in address file)
 
 Use:
 See examples at end of module
@@ -42,7 +42,7 @@ Future (Nov 2012):
     check forenames and middle names match
 
 Updates:
-Nov 2012-- minor refactorings and code commenting
+Nov 2012-- unit tests, minor refactorings and code commenting
 """
 
 from math import exp
@@ -73,7 +73,11 @@ class RandomName:
     """
 
     class RandomNameException(BaseException): pass
-    class MissingPopularityException(RandomNameException): pass
+    class MissingPopularityException(RandomNameException):
+        """
+        missing or malformed popularity field contents
+        """
+        pass
 
     def __init__(self, filename, name_fld="Name", namepopularity_fld="Common5"):
         """populate name lookup table and prepare popularity weightings"""
@@ -86,6 +90,7 @@ class RandomName:
         # Weed out rows with blank name field (e.g. empty lines at end of file)
         self.namelist = [k for k in namelist if k[name_fld].strip(' \t\n\r')]
         for name_candidate in self.namelist:
+            name_candidate[self.running_total_fld] = running_total
             # Exponentiate 0-5 score for popularity
             try:
                 popularity = math.exp(float(name_candidate[self.popularity_fld]))
@@ -93,29 +98,38 @@ class RandomName:
                 raise self.MissingPopularityException(\
                     "Popularity should be 0..5 on name %s in file %s" % \
                     (name_candidate[self.name_fld], self.filename))
-            # running_total is value that selects this name
-            # a name that matches is the first (in a sorted list) whose running_total
-            # is greater than a random number over an interval spanning all names
-            # Names span a part of the whole interval proportional to their popularity
+            # a name with index n is matched if
+            # running_total(n) <= pindrop < running_total(n+1)
+            # in the sorted list
             running_total += popularity
-            name_candidate[self.running_total_fld] = running_total
         # total_popularity used later to define range over which to choose a name
         self.total_popularity = running_total
 
     def name(self):
+        return self.all()[self.name_fld]
+
+    def all(self):
         """
         returns a random name with frequency based on a subjective
         popularity rating e.g. for male forenames, "John" will be emitted often,
         "Bartholomew" very rarely
         """
         # pick a random spot in the popularity interval over all words
+        ## Next line: stick an oar in to verify unit test test_RN_Uses_All_Names
+        ##self.total_popularity = self.namelist[-1][self.running_total_fld]
         pindrop = random.uniform(0.0, self.total_popularity)
         # which word did that spot fall on? (Linear search)
-        for name_candidate in self.namelist:
-            if pindrop <= name_candidate[self.running_total_fld]:
-                return name_candidate[self.name_fld].capitalize()
-        # it's the last entry if none matched previously
-        return self.namelist[-1][self.name_fld]
+        i = 0
+        end_of_list = len(self.namelist) - 1
+        item, next_item = self.namelist[0], self.namelist[1]
+        while i < end_of_list:
+            if item[self.running_total_fld] <= pindrop < next_item[self.running_total_fld]:
+                return item
+            i += 1
+            item, next_item = next_item, self.namelist[i]
+        # edge case: pindrop > last word running total: means last word chosen
+        return item
+
 
 
 class RandomPerson:
@@ -271,10 +285,10 @@ if __name__ == "__main__":
     """
     generate a file, size no_of_people, list some names or dump all generated data to console
     """
-    generate_file = False
+    generate_file = True
     # save a file of random people
     if generate_file:
-        no_of_people = 200
+        no_of_people = 50000
         RandomPerson().save_csv(n=no_of_people, output_filename = output_file("testing.csv"))
     else:
         # demonstrate producing a stream of people of any length
