@@ -1,26 +1,37 @@
 __author__ = 'nick'
 
-import itertools
 import random
 import unittest
 import csv
 import os
 from randomPerson import RandomName, RandomPerson
 from filelinks import test_data_input_file, test_data_output_file
+from collections import Counter
+
+def numbered_sample_output_file(no):
+    return test_data_output_file('sample-' + str(no) + '.csv')
 
 class TestRandomPerson(unittest.TestCase):
 
 
-    def output_file(self, no_of_people):
-        return test_data_output_file("sample-" + str(no_of_people) + "people.csv")
-
     def setUp(self):
-        self.samples = [10, 100, 1000]
-        for no_of_people in self.samples:
+        # iterations to ensure secure testing of binary values (e.g. sex)
+        self.binary_check_sample_size = 200
+        # a sample with a bit of length to test trends
+        self.medium_sample_size = 2000
+        # range of small sample sizes
+        self.no_of_small_samples = 50
+        # number of small samples: (0 should fail, 1 is an important test case)
+        self.small_sample_sizes = range(1,self.no_of_small_samples + 1)
+        # delete test output files
+        for no_of_people in self.small_sample_sizes:
             try:
-                os.unlink(output_file(no_of_people))
-            except:
+                os.unlink(numbered_sample_output_file(no_of_people))
+            except OSError:
                 pass
+
+    def tearDown(self):
+        pass
 
     def test_RN_Handles_BlankLines(self):
         # make sure the name lookup initialisers deal well with empty lines
@@ -51,61 +62,84 @@ class TestRandomPerson(unittest.TestCase):
         checklist = list(csv.DictReader(open(test_fname)))
         # how many samples make it *extremely* unlikely that any item was not selected
         # at least once?
-        decent_run = 100
         # set up name generator
         name_generator = RandomName(test_fname, name_fld="Forename")
         # check all names are represented in output
         for name_check in checklist:
-            for i in range(decent_run):
+            for i in range(self.binary_check_sample_size):
                 new_name = name_generator.name()
                 if name_check["Forename"] == new_name: break
             else:
                 self.fail("Name %s (1 of %d) was not generated even after %d iterations"\
                           % (name_check["Forename"],\
                              len(name_generator.namelist),\
-                             decent_run))
+                             self.binary_check_sample_size))
 
 
-    def test_RP_save_neg_sample(self):
+    def test_RP_save_zero_or_neg_sample(self):
         """
         RandomPerson().save should raise exception with negative sample sizes
         """
         with self.assertRaises(RandomPerson.NegSampleSizeException):
-            RandomPerson().save_csv(n=-1, output_filename = self.output_file(-1))
+            RandomPerson().save_csv(n=-1, output_filename = test_data_output_file("sample-minus1-items"))
+        with self.assertRaises(RandomPerson.NegSampleSizeException):
+            RandomPerson().save_csv(n=0, output_filename = test_data_output_file('sample-zero-items'))
 
 
-    def test_RP_generate_3_files(self):
+    def test_RP_generate_many_files(self):
         """
         RandomPerson().save does generate files (and can be called repeatedly)
         """
-        for no_of_people in self.samples:
-            RandomPerson().save_csv(n=no_of_people, output_filename = self.output_file(no_of_people))
-            self.assertTrue(os.path.isfile(self.output_file(no_of_people)))
+
+        for no_of_people in self.small_sample_sizes:
+            output_filename = numbered_sample_output_file(no_of_people)
+            RandomPerson().save_csv(
+                n=no_of_people,
+                output_filename=output_filename)
+            self.assertTrue(os.path.isfile(output_filename),
+                msg='Sample %s not created' % os.path.isfile(output_filename))
+            self.assertEqual(
+                len(list(csv.DictReader(open(output_filename)))),
+                no_of_people,
+                msg="Sample %d should contain %d elements. Contains %d (%s)" %\
+                    (no_of_people,
+                     no_of_people,
+                     len(list(csv.DictReader(output_filename))),
+                     output_filename)
+            )
 
     def test_RP_NoBlankNames(self):
         """
-        over a long-ish sample check RandomPerson doesn't emit any blank names
+        over a good-sized sample check RandomPerson doesn't emit any blank names
         """
         def null_or_blank(s):
             return not s.strip(' \r\t\n')
 
-        sample_size = 2000
-        new_person = RandomPerson().person()
-        new_name = RandomPerson().name_and_sex()
-        for contact in range(sample_size):
-            p = new_person.next()
-            self.assertFalse(null_or_blank(p['First name']))
-            self.assertFalse(null_or_blank(p['Middle name']))
-            self.assertFalse(null_or_blank(p['Last Name']))
-        for contact in range(sample_size):
-            n = new_name.next()
+        name = RandomPerson().gendered_name()
+        for contact in range(self.medium_sample_size):
+            n = name.next()
             cnt = 0
             # check all name and sex fields are non-blank
             for i in n.items():
                 cnt += 1
                 self.assertFalse(null_or_blank(i[1]))
 
+    def test_RP_sexes_roughly_even(self):
+        sexes_variation_percent = 15.0
+        name = RandomPerson().gendered_name()
+        sex_count = Counter()
+        for contact in range(self.binary_check_sample_size):
+            p = name.next()
+            sex_count[p['Sex']] += 1
+        print sex_count.items()
+        # check sexes are equally numbered to within a reasonable tolerance (e.g. 10%)
+        # Males outnumber females by a percentage point or two
+        self.assertAlmostEqual(
+            sex_count['male'] + 2.0/100.0 * self.binary_check_sample_size,
+            sex_count['female'],
+            delta=self.binary_check_sample_size * sexes_variation_percent / 100.0 + 1.0)
 
 
 if __name__ == '__main__':
-    unittest.main()
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestRandomPerson)
+    unittest.TextTestRunner(verbosity=2).run(suite)

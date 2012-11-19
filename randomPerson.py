@@ -106,14 +106,15 @@ class RandomName:
         self.total_popularity = running_total
 
     def name(self):
-        return self.all()[self.name_fld]
-
-    def all(self):
         """
         returns a random name with frequency based on a subjective
         popularity rating e.g. for male forenames, "John" will be emitted often,
-        "Bartholomew" very rarely
+        "Bartholomew" rarely
         """
+        return self.all()[self.name_fld]
+
+    def all(self):
+        """return name and pass through other information in lookup table"""
         # pick a random spot in the popularity interval over all words
         ## Next line: stick an oar in to verify unit test test_RN_Uses_All_Names
         ##self.total_popularity = self.namelist[-1][self.running_total_fld]
@@ -127,7 +128,7 @@ class RandomName:
                 return item
             i += 1
             item, next_item = next_item, self.namelist[i]
-        # edge case: pindrop > last word running total: means last word chosen
+        # edge case: pindrop > last word running total: means last word should be chosen
         return item
 
 
@@ -138,7 +139,7 @@ class RandomPerson:
     """
     class NegSampleSizeException(RandomPersonException):
         """
-        Negative sample size passed to .save_csv
+        Negative or zero sample size passed to .save_csv
         """
         pass
 
@@ -179,13 +180,17 @@ class RandomPerson:
                         random.choice(addresses)[self.website_fld]
             yield k
 
-    def name_and_sex(self):
+    def gendered_name(self):
         """
-        generate forenames, surname and sex (forenames clearly depend on sex)
+        generate forenames, surname and sex
+        Forenames must match in gender
+        e.g. "Sarah Jane" and "Robert James" are okay
+        but not "Alice Brett" or "Rose Frank"
         """
         while True:
             # Flip between male and female name generators at statistically credible rate
             # see http://en.wikipedia.org/wiki/Sex_ratio
+            # (using CIA estimate)
             sex = "male" if random.randint(0,1986) > 986 else "female"
             # first name and middle name must be of same sex
             if sex == "female":
@@ -227,7 +232,7 @@ class RandomPerson:
             # Birthday
             person["Birthday"] = self.birthday()
             # Override (if already present in address data) or insert surname and forename info
-            person.update(self.name_and_sex().next())
+            person.update(self.gendered_name().next())
             # Generate fake email addresses, usernames and ids
 
             # Simple username: unique per run
