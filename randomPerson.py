@@ -46,6 +46,7 @@ Nov 2012-- unit tests, minor refactorings and code commenting
 """
 
 from math import exp
+import yaml
 import math
 import os
 import csv
@@ -285,7 +286,24 @@ class RandomPerson:
         for i in range(n):
             wtr.writerow(np.next())
         outputfile.close()
-                           
+
+    def save_yaml(self, n, output_filename):
+        """compile a list of people saved in YAML matching original address book format"""
+        if n <= 0:
+            raise self.NegSampleSizeException(\
+                "Can't generate zero or negative sample sizes! (n = %d)" % (n))
+        outputfile = file(output_filename, "wb")
+        np = self.person()
+        # swallow empty first instance
+        abc = list(np.next().keys())
+        # Write people data
+        for i in range(n):
+            outputfile.write(yaml.dump(
+                {"Customer" : np.next()}
+            ))
+        outputfile.close()
+
+
 if __name__ == "__main__":
     """
     generate a file, size no_of_people, list some names or dump all generated data to console
@@ -293,8 +311,9 @@ if __name__ == "__main__":
     generate_file = True
     # save a file of random people
     if generate_file:
-        no_of_people = 50000
+        no_of_people = 10
         RandomPerson().save_csv(n=no_of_people, output_filename = output_file("testing.csv"))
+        RandomPerson().save_yaml(n=no_of_people, output_filename = output_file("testing.yaml"))
     else:
         # demonstrate producing a stream of people of any length
         new_contact = RandomPerson().person()
