@@ -2,7 +2,7 @@ __author__ = 'nick'
 ######################### Random Person Generator ###################################
 #########################    by Nick Mellor       ###################################
 #########################     Version 1.0         ###################################
-#########################      June 2009          ###################################
+#########################      Nov 2012           ###################################
 """Random Personal Data Generator
 Generates random details of fictitious people (for testing purposes?)
 
@@ -11,7 +11,8 @@ full name, sex, birthdate, address, web address,
 email address etc. based on an existing contact list, name popularity data and
 basic demographics
 
-Generates either a CSV file or a continuous stream of realistic but random personal data
+Generates CSV file, YAML file or a continuous stream of realistic but random personal data
+in Python dictionary format
 
 Random data is based on obfuscated real-world addresses
 
@@ -38,8 +39,7 @@ Future (Nov 2012):
   (e.g. software developers, middle managers, single parents) and/or generate data for other
   purposes such as organisation names, job titles, fruit and vegetable orders etc.
 - remove string literals from code (e.g. "First name")
-- Better unit testing:
-    check forenames and middle names match
+- Better unit testing
 
 Updates:
 Nov 2012-- unit tests, minor refactorings and code commenting
