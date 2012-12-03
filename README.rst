@@ -1,4 +1,5 @@
 DataGen
+=======
 
 "Out of the Box" generator of pseudo-random personal data. Data is
 "realistic". Names sound like real names and occur with real-world frequency,
@@ -7,7 +8,7 @@ gender, birthdays etc.
 Useful for code testing and load-modelling
 
 Output
-======
+------
 
 - via a Python generator (potentially unlimited names)
 
@@ -17,7 +18,7 @@ Output
 
 
 Use Out of the Box
-==================
+------------------
 
 This application should download and run as is on a hard disk or memory key in any OS
 so long as Python is installed. Examples of use are given in the ``RandomPerson.py`` module:
@@ -26,7 +27,7 @@ so long as Python is installed. Examples of use are given in the ``RandomPerson.
 
 
 Configurable
-=================
+------------
 
 Example popularity tables are included for a good selection of English-language surnames
 and forenames. The present files mark rare names with a rating of zero,
@@ -37,7 +38,7 @@ small. A donated address database would be appreciated.
 
 
 Obfuscations
-============
+------------
 
 :Gender:  by world population survey http://en.wikipedia.org/wiki/Sex_ratio
 
@@ -49,7 +50,7 @@ Obfuscations
 
 
 Future Facilities
-=================
+-----------------
 
 - SQL output
 
@@ -58,7 +59,7 @@ Future Facilities
 - obfuscating a production database for use by analysts without security clearance
 
 Author
-======
+------
 
 `Nick Mellor <http://www.back-pain-self-help.com>`_, a Python/Django developer and Alexander Technique teacher
 in Newstead, Central Victoria, Australia
