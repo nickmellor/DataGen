@@ -7,6 +7,11 @@ gender, birthdays etc.
 
 Useful for code testing and load-modelling
 
+Requirements
+------------
+
+Python 2.6 or 2.7
+
 Output
 ------
 
@@ -52,14 +57,20 @@ Obfuscations
 Future Facilities
 -----------------
 
+- test YAML output
+
 - SQL output
 
 - data modelling for non-personal data
+
+- Unicode for other languages
+
+- Python 3.3 support
 
 - obfuscating a production database for use by analysts without security clearance
 
 Author
 ------
 
-`Nick Mellor <http://www.back-pain-self-help.com>`_, a Python/Django developer and Alexander Technique teacher
+`Nick Mellor <http://www.back-pain-self-help.com/contact.html>`_, a Python/Django developer and Alexander Technique teacher
 in Newstead, Central Victoria, Australia

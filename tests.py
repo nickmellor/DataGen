@@ -1,6 +1,5 @@
 __author__ = 'nick'
 
-import random
 import unittest
 import csv
 import os
@@ -37,19 +36,18 @@ class TestRandomPerson(unittest.TestCase):
         # make sure the name lookup initialisers deal well with empty lines
         self.name_generator = \
             RandomName(test_data_input_file("lookupwithgaps.csv"), name_fld="Forename")
-        self.assertEqual(\
-            len(self.name_generator.namelist),\
+        self.assertEqual(
+            len(self.name_generator.namelist),
             len(list(csv.DictReader(open(test_data_input_file("lookupwithgaps.csv")))))
         )
 
     def test_RN_Handles_NonNumPopularity(self):
         # make sure the name popularity mechanisms deal with empty lines
         with self.assertRaises(RandomName.MissingPopularityException):
-            name_generator =\
-                RandomName(test_data_input_file("lookupMissingPopularity.csv"),\
-                    name_fld="Forename")
+            name_generator = RandomName(
+                                test_data_input_file("lookupMissingPopularity.csv"),
+                                name_fld="Forename")
 
-    #@unittest.skip("Fails but not a problem for current uses")
     def test_RN_Uses_All_Names(self):
         """
         test that RandomNames uses all available options.
@@ -71,8 +69,8 @@ class TestRandomPerson(unittest.TestCase):
                 if name_check["Forename"] == new_name: break
             else:
                 self.fail("Name %s (1 of %d) was not generated even after %d iterations"\
-                          % (name_check["Forename"],\
-                             len(name_generator.namelist),\
+                          % (name_check["Forename"],
+                             len(name_generator.namelist),
                              self.binary_check_sample_size))
 
 
