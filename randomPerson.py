@@ -106,6 +106,7 @@ class RandomName:
         # total_popularity used later to define range over which to choose a name
         self.total_popularity = running_total
 
+
     def name(self):
         """
         returns a random name with frequency based on a subjective
@@ -163,6 +164,30 @@ class RandomPerson:
         self.address_generator = self.address(self.fp("Addresses.csv"))
         self.fieldorder = []
 
+    DEFAULT_FIELDMAP = {
+        'Birthday'    : None,
+        'Company'     : None,
+        'First name'  : 'first_name',
+        'Middle name' : None,
+        'Last Name'   : 'last_name',
+        'Mobile'      : 'mob',
+        'Phone'       : 'phone',
+        'Email'       : 'email',
+        'Fax'         : None,
+        'Street'      : "street1",
+        'State'       : 'state',
+        'Suburb'      : 'suburb_town',
+        'Postcode'    : 'postal_code',
+        'Sex'         : None,
+        'Title'       : None,
+        'Website'     : None,
+        'password'    : 'password'}
+
+    def _map_fields(self, p, fieldmap=None):
+        if fieldmap is None:
+            fieldmap = self.DEFAULT_FIELDMAP
+        return dict([(v,p[k]) for k,v in fieldmap.items() if fieldmap[v]])
+
     def fp(self, filename):
         """return full path of a filename by prepending root directory"""
         return os.path.join(self.lookup_root, filename)
@@ -198,6 +223,7 @@ class RandomPerson:
                 forename_generator = self.female_forename_generator
             else:
                 forename_generator = self.male_forename_generator
+
             yield  {
                 "First name" : forename_generator.name(),
                 "Middle name" : forename_generator.name(),
@@ -269,39 +295,34 @@ class RandomPerson:
         birthday = int(random.uniform(1.0, 31.0) * (float(lastdayofmonth) / 31) + 1.0)
         return "%d/%d/%d" % (birthday, birthmonth, birthyear)
 
-    def save_csv(self, n, output_filename):
-        """compile a list of people saved in CSV matching original address book format"""
-        if n <= 0:
+    def save(self,
+             no_of_people,
+             output_filename,
+             output_filetype='yaml',
+             yaml_entity_name='Customer'):
+        """compile a list of people and save to a file"""
+        if no_of_people <= 0:
             raise self.NegSampleSizeException(\
-                "Can't generate zero or negative sample sizes! (n = %d)" % (n))
-        outputfile = file(output_filename, "wb")
-        np = self.person()
-        # swallow empty first instance
-        abc = list(np.next().keys())
-        wtr = csv.DictWriter(outputfile, self.fieldorder, extrasaction='ignore')
-        # Write heading row in order of original contacts table
-        # NB: leaves out some of the data generated
-        wtr.writerow(dict(zip(self.fieldorder, self.fieldorder)))
-        # Write people data
-        for i in range(n):
-            wtr.writerow(np.next())
-        outputfile.close()
+                "Can't generate zero or negative sample sizes! (n = %d)" % (no_of_people))
+        with file(output_filename, "wb") as outputfile:
+            np = self.person()
+            # swallow empty first instance
+            dontuse = list(np.next().keys())
+            if output_filetype == 'csv':
+                # Write heading row in order of original contacts table
+                field_header = [self.DEFAULT_FIELDMAP[r]
+                                for r
+                                in self.fieldorder
+                                if self.DEFAULT_FIELDMAP[r]]
+                wtr = csv.DictWriter(outputfile, field_header, extrasaction='ignore')
+                wtr.writeheader()
+            for i in range(no_of_people):
+                if output_filetype == 'csv':
+                    wtr.writerow(self._map_fields(np.next()))
+                elif output_filetype == 'yaml':
+                    outputfile.write(yaml.dump({'model': yaml_entity_name,
+                                                'fields': _map_fields(np.next())}))
 
-    def save_yaml(self, n, output_filename):
-        """compile a list of people saved in YAML matching original address book format"""
-        if n <= 0:
-            raise self.NegSampleSizeException(\
-                "Can't generate zero or negative sample sizes! (n = %d)" % (n))
-        outputfile = file(output_filename, "wb")
-        np = self.person()
-        # swallow empty first instance
-        abc = list(np.next().keys())
-        # Write people data
-        for i in range(n):
-            outputfile.write(yaml.dump(
-                {"Customer" : np.next()}
-            ))
-        outputfile.close()
 
 
 if __name__ == "__main__":
@@ -312,8 +333,13 @@ if __name__ == "__main__":
     # save a file of random people
     if generate_file:
         no_of_people = 10
-        RandomPerson().save_csv(n=no_of_people, output_filename = output_file("testing.csv"))
-        RandomPerson().save_yaml(n=no_of_people, output_filename = output_file("testing.yaml"))
+        RandomPerson().save(no_of_people,
+                            output_filename=output_file("testing.csv"),
+                            output_filetype='csv')
+#        RandomPerson().save(no_of_people,
+#                            output_filename=output_file("testing.yaml"),
+#                            output_filetype='yaml',
+#                            yaml_entity='groceries.Customer')
     else:
         # demonstrate producing a stream of people of any length
         new_contact = RandomPerson().person()
