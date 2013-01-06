@@ -134,7 +134,7 @@ class RandomName:
         return item
 
 
-
+import fieldmap
 class RandomPerson:
     """
     generate a "person" record with random but believable personal data
@@ -164,29 +164,15 @@ class RandomPerson:
         self.address_generator = self.address(self.fp("Addresses.csv"))
         self.fieldorder = []
 
-    DEFAULT_FIELDMAP = {
-        'Birthday'    : None,
-        'Company'     : None,
-        'First name'  : 'first_name',
-        'Middle name' : None,
-        'Last Name'   : 'last_name',
-        'Mobile'      : 'mob',
-        'Phone'       : 'phone',
-        'Email'       : 'email',
-        'Fax'         : None,
-        'Street'      : "street1",
-        'State'       : 'state',
-        'Suburb'      : 'suburb_town',
-        'Postcode'    : 'postal_code',
-        'Sex'         : None,
-        'Title'       : None,
-        'Website'     : None,
-        'password'    : 'password'}
 
-    def _map_fields(self, p, fieldmap=None):
-        if fieldmap is None:
-            fieldmap = self.DEFAULT_FIELDMAP
-        return dict([(v,p[k]) for k,v in fieldmap.items() if fieldmap[v]])
+    def _map_fields(self, p, fieldmap_override=None):
+        """
+        select out and rename the fields as appropriate for the client
+        application
+        """
+        if fieldmap_override is None:
+            fieldmap_override = fieldmap.FIELDMAP
+        return {v:p[k] for k,v in fieldmap_override.items() if v}
 
     def fp(self, filename):
         """return full path of a filename by prepending root directory"""
@@ -256,17 +242,17 @@ class RandomPerson:
                     firstline[1] = str(random.randint(0,75) * 3 + 1)
             # Write first line back
             person[self.firstlineaddress_fld] = "".join(firstline)
-            # Birthday
             person["Birthday"] = self.birthday()
-            # Override (if already present in address data) or insert surname and forename info
+            # Override or insert surname and forename info
             person.update(self.gendered_name().next())
             # Generate fake email addresses, usernames and ids
 
-            # Simple username: unique per run
+            # OPTIONS:
+            #   - Simple username: unique per run
             #username = "test" + str(id)
 
-            # More sophisticated: good uniqueness but still contains first name
-            # Removing [:5] or increasing to [:n]
+            #   - More sophisticated: good uniqueness but still contains first name
+            # Removing [:5] or increasing 5 to n
             # gives better uniqueness but less readable usernames
             username = person["First name"] + "-" \
                        + hashlib.md5(repr(person)).hexdigest()[:5]
@@ -299,7 +285,7 @@ class RandomPerson:
              no_of_people,
              output_filename,
              output_filetype='yaml',
-             yaml_entity_name='Customer'):
+             yaml_entity='Customer'):
         """compile a list of people and save to a file"""
         if no_of_people <= 0:
             raise self.NegSampleSizeException(\
@@ -310,18 +296,18 @@ class RandomPerson:
             dontuse = list(np.next().keys())
             if output_filetype == 'csv':
                 # Write heading row in order of original contacts table
-                field_header = [self.DEFAULT_FIELDMAP[r]
+                field_header = [fieldmap.FIELDMAP[r]
                                 for r
                                 in self.fieldorder
-                                if self.DEFAULT_FIELDMAP[r]]
+                                if fieldmap.FIELDMAP[r]]
                 wtr = csv.DictWriter(outputfile, field_header, extrasaction='ignore')
                 wtr.writeheader()
             for i in range(no_of_people):
                 if output_filetype == 'csv':
                     wtr.writerow(self._map_fields(np.next()))
                 elif output_filetype == 'yaml':
-                    outputfile.write(yaml.dump({'model': yaml_entity_name,
-                                                'fields': _map_fields(np.next())}))
+                    outputfile.write(yaml.dump({'model': yaml_entity,
+                                                'fields': self._map_fields(np.next())}))
 
 
 
@@ -336,10 +322,10 @@ if __name__ == "__main__":
         RandomPerson().save(no_of_people,
                             output_filename=output_file("testing.csv"),
                             output_filetype='csv')
-#        RandomPerson().save(no_of_people,
-#                            output_filename=output_file("testing.yaml"),
-#                            output_filetype='yaml',
-#                            yaml_entity='groceries.Customer')
+        RandomPerson().save(no_of_people,
+                            output_filename=output_file("testing.yaml"),
+                            output_filetype='yaml',
+                            yaml_entity='groceries.Customer')
     else:
         # demonstrate producing a stream of people of any length
         new_contact = RandomPerson().person()
