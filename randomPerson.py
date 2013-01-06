@@ -47,6 +47,8 @@ Future (Nov 2012):
 
 Updates:
 Nov 2012-- unit tests, minor refactorings and code commenting
+Jan 2013-- began work on output transformations (selecting and renaming of data
+           fields
 """
 
 import yaml
