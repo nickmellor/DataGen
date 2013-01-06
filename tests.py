@@ -79,9 +79,13 @@ class TestRandomPerson(unittest.TestCase):
         RandomPerson().save should raise exception with negative sample sizes
         """
         with self.assertRaises(RandomPerson.NegSampleSizeException):
-            RandomPerson().save_csv(n=-1, output_filename = test_data_output_file("sample-minus1-items"))
+            RandomPerson().save(
+                no_of_people=-1,
+                output_filename = test_data_output_file("sample-minus1-items"))
         with self.assertRaises(RandomPerson.NegSampleSizeException):
-            RandomPerson().save_csv(n=0, output_filename = test_data_output_file('sample-zero-items'))
+            RandomPerson().save(
+                no_of_people=-1,
+                output_filename = test_data_output_file("sample-zero-items"))
 
 
     def test_RP_generate_many_files(self):
@@ -91,9 +95,10 @@ class TestRandomPerson(unittest.TestCase):
 
         for no_of_people in self.small_sample_sizes:
             output_filename = numbered_sample_output_file(no_of_people)
-            RandomPerson().save_csv(
-                n=no_of_people,
-                output_filename=output_filename)
+            RandomPerson().save(
+                no_of_people,
+                output_filename=output_filename,
+                output_filetype='csv')
             self.assertTrue(os.path.isfile(output_filename),
                 msg='Sample %s not created' % os.path.isfile(output_filename))
             self.assertEqual(

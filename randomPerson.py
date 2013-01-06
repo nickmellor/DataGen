@@ -11,8 +11,8 @@ full name, sex, birthdate, address, web address,
 email address etc. based on an existing contact list, name popularity data and
 basic demographics
 
-Generates CSV file, YAML file or a continuous stream of realistic but random personal data
-in Python dictionary format
+Generates CSV file, YAML file (Django fixture) or a continuous stream of realistic
+but random personal data in Python dictionary format
 
 Random data is based on obfuscated real-world addresses
 
@@ -20,6 +20,10 @@ An ordinary contact list can be dropped into the generator unchanged
 to act as model data-- you can use your own address book to generate realistic
 contact details. The initial file format is Outlook export CSV but can easily be
 modified for other sources
+
+Transformations:
+
+Typically
 
 Obfuscations include:
   - all numbers in first line of address are changed
@@ -45,7 +49,6 @@ Updates:
 Nov 2012-- unit tests, minor refactorings and code commenting
 """
 
-from math import exp
 import yaml
 import math
 import os
@@ -274,8 +277,8 @@ class RandomPerson:
         lastdayofmonth = monthlen[birthmonth - 1]
         # take leap year into account: allow 29 days in some Febs
         if (birthmonth == 2
-         and birthyear%4 == 0
-         and (birthyear%100 != 0 or birthyear%400 == 0)):
+         and birthyear % 4 == 0
+         and (birthyear % 100 != 0 or birthyear % 400 == 0)):
             lastdayofmonth = 29
         # choose day of month
         birthday = int(random.uniform(1.0, 31.0) * (float(lastdayofmonth) / 31) + 1.0)
@@ -284,7 +287,7 @@ class RandomPerson:
     def save(self,
              no_of_people,
              output_filename,
-             output_filetype='yaml',
+             output_filetype='django_yaml_fixture',
              yaml_entity='Customer'):
         """compile a list of people and save to a file"""
         if no_of_people <= 0:
@@ -305,7 +308,7 @@ class RandomPerson:
             for i in range(no_of_people):
                 if output_filetype == 'csv':
                     wtr.writerow(self._map_fields(np.next()))
-                elif output_filetype == 'yaml':
+                elif output_filetype == 'django_yaml_fixture':
                     outputfile.write(yaml.dump({'model': yaml_entity,
                                                 'fields': self._map_fields(np.next())}))
 
@@ -324,7 +327,7 @@ if __name__ == "__main__":
                             output_filetype='csv')
         RandomPerson().save(no_of_people,
                             output_filename=output_file("testing.yaml"),
-                            output_filetype='yaml',
+                            output_filetype='django_yaml_fixture',
                             yaml_entity='groceries.Customer')
     else:
         # demonstrate producing a stream of people of any length
