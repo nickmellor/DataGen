@@ -43,8 +43,8 @@ Addresses are also created but the address file from which they are generated is
 small. A donated address database would be appreciated.
 
 
-Obfuscations
-------------
+Obfuscations Performed on Output
+--------------------------------
 
 :Gender:  by world population survey http://en.wikipedia.org/wiki/Sex_ratio
 
@@ -67,6 +67,10 @@ Future Facilities
 - Unicode for other languages
 
 - Python 3.3 support
+
+- extend output transformations and make more easily and robustly configurable,
+
+- introduce input transformations in order to support other address databases as input
 
 - obfuscating a production database for use by analysts without security clearance
 
