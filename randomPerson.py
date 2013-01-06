@@ -274,8 +274,8 @@ class RandomPerson:
         lastdayofmonth = monthlen[birthmonth - 1]
         # take leap year into account: allow 29 days in some Febs
         if (birthmonth == 2
-         and birthyear%4 == 0
-         and (birthyear%100 != 0 or birthyear%400 == 0)):
+         and birthyear % 4 == 0
+         and (birthyear % 100 != 0 or birthyear % 400 == 0)):
             lastdayofmonth = 29
         # choose day of month
         birthday = int(random.uniform(1.0, 31.0) * (float(lastdayofmonth) / 31) + 1.0)
@@ -284,7 +284,7 @@ class RandomPerson:
     def save(self,
              no_of_people,
              output_filename,
-             output_filetype='yaml',
+             output_filetype='django_yaml_fixture',
              yaml_entity='Customer'):
         """compile a list of people and save to a file"""
         if no_of_people <= 0:
@@ -305,7 +305,7 @@ class RandomPerson:
             for i in range(no_of_people):
                 if output_filetype == 'csv':
                     wtr.writerow(self._map_fields(np.next()))
-                elif output_filetype == 'yaml':
+                elif output_filetype == 'django_yaml_fixture':
                     outputfile.write(yaml.dump({'model': yaml_entity,
                                                 'fields': self._map_fields(np.next())}))
 
@@ -324,7 +324,7 @@ if __name__ == "__main__":
                             output_filetype='csv')
         RandomPerson().save(no_of_people,
                             output_filename=output_file("testing.yaml"),
-                            output_filetype='yaml',
+                            output_filetype='django_yaml_fixture',
                             yaml_entity='groceries.Customer')
     else:
         # demonstrate producing a stream of people of any length
