@@ -11,7 +11,7 @@ Useful for code testing and load-modelling
 Requirements
 ------------
 
-Python 2.6 or 2.7
+Python 2.7 (dictionary comprehensions in code)
 
 Output
 ------

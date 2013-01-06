@@ -47,6 +47,8 @@ Future (Nov 2012):
 
 Updates:
 Nov 2012-- unit tests, minor refactorings and code commenting
+Jan 2013-- began work on output transformations (selecting and renaming of data
+           fields
 """
 
 import yaml
@@ -334,7 +336,7 @@ if __name__ == "__main__":
         new_contact = RandomPerson().person()
         justnames = True
         if justnames:
-            for i in range(10):
+            for i in range(50):
                 p = new_contact.next()
                 print "%s, %s %s" % (p["Last Name"].upper(), p["First name"], p["Middle name"])
         else:
