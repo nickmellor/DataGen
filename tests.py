@@ -3,7 +3,7 @@ __author__ = 'nick'
 import unittest
 import csv
 import os
-from randomPerson import RandomName, RandomPerson
+from randomPerson import RandomWeightedChoice, RandomPerson
 from filelinks import test_data_input_file, test_data_output_file
 from collections import Counter
 
@@ -35,18 +35,18 @@ class TestRandomPerson(unittest.TestCase):
     def test_RN_Handles_BlankLines(self):
         # make sure the name lookup initialisers deal well with empty lines
         self.name_generator = \
-            RandomName(test_data_input_file("lookupwithgaps.csv"), name_fld="Forename")
+            RandomWeightedChoice(test_data_input_file("lookupwithgaps.csv"), name_fld="Forename")
         self.assertEqual(
-            len(self.name_generator.namelist),
+            len(self.name_generator.item),
             len(list(csv.DictReader(open(test_data_input_file("lookupwithgaps.csv")))))
         )
 
     def test_RN_Handles_NonNumPopularity(self):
         # make sure the name popularity mechanisms deal with empty lines
-        with self.assertRaises(RandomName.MissingPopularityException):
-            name_generator = RandomName(
+        with self.assertRaises(RandomWeightedChoice.MissingPopularityException):
+            name_generator = RandomWeightedChoice(
                                 test_data_input_file("lookupMissingPopularity.csv"),
-                                name_fld="Forename")
+                                                        name_fld="Forename")
 
     def test_RN_Uses_All_Names(self):
         """
@@ -61,7 +61,7 @@ class TestRandomPerson(unittest.TestCase):
         # how many samples make it *extremely* unlikely that any item was not selected
         # at least once?
         # set up name generator
-        name_generator = RandomName(test_fname, name_fld="Forename")
+        name_generator = RandomWeightedChoice(test_fname, name_fld="Forename")
         # check all names are represented in output
         for name_check in checklist:
             for i in range(self.binary_check_sample_size):
@@ -70,7 +70,7 @@ class TestRandomPerson(unittest.TestCase):
             else:
                 self.fail("Name %s (1 of %d) was not generated even after %d iterations"\
                           % (name_check["Forename"],
-                             len(name_generator.namelist),
+                             len(name_generator.item),
                              self.binary_check_sample_size))
 
 

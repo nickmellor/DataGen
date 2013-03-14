@@ -1,7 +1,7 @@
 __author__ = 'nick'
 ######################### Random Person Generator ###################################
 #########################    by Nick Mellor       ###################################
-#########################     Version 1.0         ###################################
+#########################     Version 1.2 alpha   ###################################
 #########################      Nov 2012           ###################################
 """Random Personal Data Generator
 Generates random details of fictitious people (for testing purposes?)
@@ -35,6 +35,9 @@ Obfuscations include:
 Performance:
 1000+ people per second (2GHz laptop, 200 entries in address file)
 
+Dependencies:
+pyyaml for test framework
+
 Use:
 See examples at end of module
 
@@ -49,6 +52,9 @@ Updates:
 Nov 2012-- unit tests, minor refactorings and code commenting
 Jan 2013-- began work on output transformations (selecting and renaming of data
            fields
+
+
+
 """
 
 import yaml
@@ -58,6 +64,7 @@ import csv
 import re
 import hashlib
 import random
+import bisect
 from filelinks import lookup_file, output_file, base_dir
 
 class RandomPersonException(BaseException):
@@ -70,12 +77,11 @@ class NameLookupException(RandomPersonException):
     """error in name/popularity input file"""
     pass
 
-class RandomName:
+class RandomWeightedChoice:
     """
-    Generates a stream of random names (could be surname, forename, middle name, organisation etc.)
-    based on a name popularity lookup table.
-    More common names are returned exponentially more frequently.
-    Common5 field contains zero for uncommon name to 5 for very common
+    Generates a stream of random choices (could be surname, forename, middle name, organisation, vegetable etc.)
+    based on a popularity table. More common choices are returned exponentially more frequently.
+    Common5 field contains zero for uncommon choice to 5 for very common
     """
 
     class RandomNameException(BaseException): pass
@@ -85,31 +91,33 @@ class RandomName:
         """
         pass
 
-    def __init__(self, filename, name_fld="Name", namepopularity_fld="Common5"):
-        """populate name lookup table and prepare popularity weightings"""
-        self.filename = filename
+    def __init__(self, filename, name_fld="Name", weightRating_fld="Common5"):
+        """populate name lookup table and prepare word_weight weightings"""
+        item_list = list(csv.DictReader(open(filename)))
+        #self.running_total_fld = "rn_runningTotal"
         self.name_fld = name_fld
-        namelist = list(csv.DictReader(open(filename)))
-        self.running_total_fld = "rn_runningTotal"
-        self.popularity_fld = namepopularity_fld
-        running_total = 0.0
+        self.popularity_fld = weightRating_fld
         # Weed out rows with blank name field (e.g. empty lines at end of file)
-        self.namelist = [k for k in namelist if k[name_fld].strip(' \t\n\r')]
-        for name_candidate in self.namelist:
-            name_candidate[self.running_total_fld] = running_total
-            # Exponentiate 0-5 score for popularity
+        item_list = [k for k in csv.DictReader(open(filename))
+                    if k[name_fld].strip(' \t\n\r')]
+        self.item = []
+        self.weight_ceiling = []
+        stack_weight = 0.0
+        for choice in item_list:
+            # Exponentiate 0-5 score for word_weight
             try:
-                popularity = math.exp(float(name_candidate[self.popularity_fld]))
+                word_weight = math.exp(float(choice[self.popularity_fld]))
             except:
-                raise self.MissingPopularityException(\
-                    "Popularity should be 0..5 on name %s in file %s" % \
-                    (name_candidate[self.name_fld], self.filename))
-            # a name with index n is matched if
-            # running_total(n) <= pindrop < running_total(n+1)
-            # in the sorted list
-            running_total += popularity
+                raise self.MissingPopularityException(
+                    "Weight should be 0..5 on name %s in file %s" %
+                    (choice[name_fld], filename))
+            # a name is matched if it is the first
+            # name with cumulative weight > pindrop
+            stack_weight += word_weight
+            self.item.append(choice)
+            self.weight_ceiling.append(stack_weight)
         # total_popularity used later to define range over which to choose a name
-        self.total_popularity = running_total
+        self.stack_weight = stack_weight
 
 
     def name(self):
@@ -118,6 +126,7 @@ class RandomName:
         popularity rating e.g. for male forenames, "John" will be emitted often,
         "Bartholomew" rarely
         """
+        #print (self.all())
         return self.all()[self.name_fld]
 
     def all(self):
@@ -125,18 +134,22 @@ class RandomName:
         # pick a random spot in the popularity interval over all words
         ## Next line: stick an oar in to verify unit test test_RN_Uses_All_Names
         ##self.total_popularity = self.namelist[-1][self.running_total_fld]
-        pindrop = random.uniform(0.0, self.total_popularity)
-        # which word did that spot fall on? (Linear search)
-        i = 0
-        end_of_list = len(self.namelist) - 1
-        item, next_item = self.namelist[0], self.namelist[1]
-        while i < end_of_list:
-            if item[self.running_total_fld] <= pindrop < next_item[self.running_total_fld]:
-                return item
-            i += 1
-            item, next_item = next_item, self.namelist[i]
-        # edge case: pindrop > last word running total: means last word should be chosen
-        return item
+        pindrop = random.uniform(0.0, self.stack_weight)
+        i = bisect.bisect_left(self.weight_ceiling, pindrop)
+        if i != len(self.weight_ceiling):
+            return self.item[i]
+        # if get this far, there's a bug
+        raise ValueError
+##        # which word did that spot fall on? (Linear search)
+##        i = 0
+##        end_of_list = len(self.namelist) - 1
+##        item, next_item = self.namelist[0], self.namelist[1]
+##        while i < end_of_list:
+##            if item[self.running_total_fld] <= pindrop < next_item[self.running_total_fld]:
+##                return item
+##            i += 1
+##            item, next_item = next_item, self.namelist[i]
+##        # edge case: pindrop > last word running total: means last word should be chosen
 
 
 import fieldmap
@@ -155,29 +168,35 @@ class RandomPerson:
         lookup_root specifies where to find lookup tables
         """
         self.lookup_root = lookup_root
-        self.firstlineaddress_fld = "Street"
-        self.website_fld = "Website"
+        self.firstlineaddress_fld = "street"
+        self.website_fld = "website"
         # separate generators for male and female names means lookup tables can
         # be of different sizes and use different distributions of popularity weighting
         # without skewing the overall numbers of male and female names generated
         self.female_forename_generator = \
-            RandomName(self.fp("Forenames_female.csv"), name_fld="Forename")
+            RandomWeightedChoice(self.fp("Forenames_female.csv"), name_fld="Forename")
         self.male_forename_generator = \
-            RandomName(self.fp("Forenames_male.csv"), name_fld="Forename")
+            RandomWeightedChoice(self.fp("Forenames_male.csv"), name_fld="Forename")
         self.surname_generator = \
-            RandomName(self.fp("Surnames.csv"), name_fld="Surname")
+            RandomWeightedChoice(self.fp("Surnames.csv"), name_fld="Surname")
         self.address_generator = self.address(self.fp("Addresses.csv"))
         self.fieldorder = []
 
 
-    def _map_fields(self, p, fieldmap_override=None):
+    def translateIn(self, p, fieldmapping):
         """
         select out and rename the fields as appropriate for the client
         application
+        TODO: currently doesn't pass through data
         """
-        if fieldmap_override is None:
-            fieldmap_override = fieldmap.FIELDMAP
-        return {v:p[k] for k,v in fieldmap_override.items() if v}
+        # 'pass-thru' fields: no translation
+        trans = {k:v for k,v in p.items()
+                 if k not in fieldmapping}
+        # translate the rest, dropping fields mapped to None        
+        trans.update({v:p[k] for k,v
+                      in fieldmapping.items() if k in p.keys()})
+        print({v:p[k] for k,v in fieldmapping.items() if k in p.keys()})
+        return trans
 
     def fp(self, filename):
         """return full path of a filename by prepending root directory"""
@@ -189,12 +208,16 @@ class RandomPerson:
         # store field order from original address table--
         # used by output functions
         self.fieldorder = csv.reader(open(filename)).next()
-        # load in whole list for speed
+        # load in all addresses for random-access
         addresses = list(csv.DictReader(open(filename)))
         while True:
-            k = dict.copy(random.choice(addresses))
-            k[self.website_fld] = \
-                        random.choice(addresses)[self.website_fld]
+            k = random.choice(addresses)
+            k = self.translateIn(k, fieldmap.OUTLOOK_MAP_INCOMING)
+#            k[self.website_fld] = \
+#                self._map_fields(
+#                    random.choice(addresses),
+#                    fieldmap.OUTLOOK_MAP_INCOMING
+#                    )[self.website_fld]
             yield k
 
     def gendered_name(self):
@@ -216,10 +239,10 @@ class RandomPerson:
                 forename_generator = self.male_forename_generator
 
             yield  {
-                "First name" : forename_generator.name(),
-                "Middle name" : forename_generator.name(),
-                "Last Name" : self.surname_generator.name(),
-                "Sex" : sex
+                "first_name" : forename_generator.name(),
+                "middle_name" : forename_generator.name(),
+                "last_name" : self.surname_generator.name(),
+                "sex" : sex
             }
 
     def person(self):
@@ -247,7 +270,7 @@ class RandomPerson:
                     firstline[1] = str(random.randint(0,75) * 3 + 1)
             # Write first line back
             person[self.firstlineaddress_fld] = "".join(firstline)
-            person["Birthday"] = self.birthday()
+            person["birthday"] = self.birthday()
             # Override or insert surname and forename info
             person.update(self.gendered_name().next())
             # Generate fake email addresses, usernames and ids
@@ -259,11 +282,11 @@ class RandomPerson:
             #   - More sophisticated: good uniqueness but still contains first name
             # Removing [:5] or increasing 5 to n
             # gives better uniqueness but less readable usernames
-            username = person["First name"] + "-" \
+            username = person["first_name"] + "-" \
                        + hashlib.md5(repr(person)).hexdigest()[:5]
             # Use username for email as well
             # Email domain name could be more sophisticated...
-            person.update({"Email" : username + "@bendigotraders.org",
+            person.update({"email" : username + "@bendigotraders.org",
                            "username" : username,
                            "password" : "test"})
             yield person
@@ -283,14 +306,17 @@ class RandomPerson:
          and (birthyear % 100 != 0 or birthyear % 400 == 0)):
             lastdayofmonth = 29
         # choose day of month
-        birthday = int(random.uniform(1.0, 31.0) * (float(lastdayofmonth) / 31) + 1.0)
+        birthday = int(random.uniform(1.0, 31.0) *
+                       (float(lastdayofmonth) / 31) + 1.0)
         return "%d/%d/%d" % (birthday, birthmonth, birthyear)
 
     def save(self,
              no_of_people,
              output_filename,
              output_filetype='django_yaml_fixture',
-             yaml_entity='Customer'):
+             yaml_entity='Customer',
+             id_start=1,
+             id_step=1):
         """compile a list of people and save to a file"""
         if no_of_people <= 0:
             raise self.NegSampleSizeException(\
@@ -301,20 +327,26 @@ class RandomPerson:
             dontuse = list(np.next().keys())
             if output_filetype == 'csv':
                 # Write heading row in order of original contacts table
-                field_header = [fieldmap.FIELDMAP[r]
+                # todo-nm outgoing translations passim
+                field_header = [fieldmap.OUTLOOK_MAP_INCOMING[r]
                                 for r
                                 in self.fieldorder
-                                if fieldmap.FIELDMAP[r]]
+                                if fieldmap.OUTLOOK_MAP_INCOMING[r]]
                 wtr = csv.DictWriter(outputfile, field_header, extrasaction='ignore')
                 wtr.writeheader()
+            person_id = id_start
             for i in range(no_of_people):
                 if output_filetype == 'csv':
-                    wtr.writerow(self._map_fields(np.next()))
+                    p = self.translateOut(np.next())
+                    wtr.writerow(p)
                 elif output_filetype == 'django_yaml_fixture':
-                    outputfile.write(yaml.dump({'model': yaml_entity,
-                                                'fields': self._map_fields(np.next())}))
+                    outputfile.write(
+                        yaml.dump([{ 'model' : yaml_entity,
+                                        'pk' : person_id,
+                                    'fields' : self.translateOut(np.next())}]))
+                person_id += id_step
 
-
+# todo optional primary key, currently only implemented for YAML fixture
 
 if __name__ == "__main__":
     """
@@ -323,7 +355,7 @@ if __name__ == "__main__":
     generate_file = True
     # save a file of random people
     if generate_file:
-        no_of_people = 10
+        no_of_people = 50
         RandomPerson().save(no_of_people,
                             output_filename=output_file("testing.csv"),
                             output_filetype='csv')
@@ -333,6 +365,7 @@ if __name__ == "__main__":
                             yaml_entity='groceries.Customer')
     else:
         # demonstrate producing a stream of people of any length
+        # TODO still needs output translation. Only .save implemented
         new_contact = RandomPerson().person()
         justnames = True
         if justnames:
