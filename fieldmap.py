@@ -125,7 +125,7 @@ def translate(p, fieldmapping, passthru):
         trans = {}
     # add the rest, dropping fields mapped to None
     trans.update({v:p[k] for k,v
-                  in fieldmapping.items() if k in p.keys()})
+                  in fieldmapping.items() if ((k in p.keys()) and v)})
     return trans
 
 def translateIn(p, passthru=True):

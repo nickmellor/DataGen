@@ -198,8 +198,9 @@ class RandomPerson:
         # Input address data might have nothing in common with
         # output address data order
         fieldorder = csv.reader(open(filename)).next()
-        fieldorder = [fieldmap.INCOMING_TRANSLATION[r] for r in fieldorder]
-        self.fieldorder = [r for r in fieldorder if not r]
+        fieldorder = dict(zip(fieldorder, fieldorder))
+        fieldorder = fieldmap.translateIn(fieldorder)
+        self.fieldorder = [r for r in fieldorder if r]
         # load in all addresses for random-access
         addresses = tuple(csv.DictReader(open(filename)))
         # translate all the addresses for processing
@@ -249,7 +250,7 @@ class RandomPerson:
             person = self.address_generator.next()
             # Disguise address-- change all numbers
             # First randomise numbers in first line of address
-            print(person)
+            #print(person)
             firstline = re.split("(^[0-9]+)", person[self.firstlineaddress_fld])
             # If no numbers in address, leave as is
             if len(firstline) != 1:
@@ -322,7 +323,7 @@ class RandomPerson:
             if output_filetype == 'csv':
                 # Write heading row in order of original contacts table
                 # todo-nm outgoing translations passim
-                print (self.fieldorder)
+                #print("fieldorder", self.fieldorder)
                 field_header = [fieldmap.OUTGOING_TRANSLATION[r]
                                 for r
                                 in self.fieldorder
@@ -336,7 +337,7 @@ class RandomPerson:
                     wtr.writerow(p)
                 elif output_filetype == 'django_yaml_fixture':
                     p = fieldmap.translateOut(np.next())
-                    print(p)
+                    print('map', p)
                     outputfile.write(
                         yaml.dump([{ 'model' : yaml_entity,
                                         'pk' : person_id,
