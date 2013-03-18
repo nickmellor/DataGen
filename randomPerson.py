@@ -67,9 +67,13 @@ import random
 import bisect
 from filelinks import lookup_file, output_file, base_dir
 
+# Todo-- pluggable data generators
+# (e.g. generate a database of young female entrepreneurs, a male-heavy corporate
+# population or an Asian state in which there are fewer females than males
+
 class RandomPersonException(BaseException):
     """
-    any exception in the RandomPerson class
+    base exception for any exception in the RandomPerson class
     """
     pass
 
@@ -132,8 +136,6 @@ class RandomWeightedChoice:
     def all(self):
         """return name and pass through other information in lookup table"""
         # pick a random spot in the popularity interval over all words
-        ## Next line: stick an oar in to verify unit test test_RN_Uses_All_Names
-        ##self.total_popularity = self.namelist[-1][self.running_total_fld]
         pindrop = random.uniform(0.0, self.stack_weight)
         i = bisect.bisect_left(self.weight_ceiling, pindrop)
         if i != len(self.weight_ceiling):
@@ -183,21 +185,6 @@ class RandomPerson:
         self.fieldorder = []
 
 
-    def translateIn(self, p, fieldmapping):
-        """
-        select out and rename the fields as appropriate for the client
-        application
-        TODO: currently doesn't pass through data
-        """
-        # 'pass-thru' fields: no translation
-        trans = {k:v for k,v in p.items()
-                 if k not in fieldmapping}
-        # translate the rest, dropping fields mapped to None        
-        trans.update({v:p[k] for k,v
-                      in fieldmapping.items() if k in p.keys()})
-        print({v:p[k] for k,v in fieldmapping.items() if k in p.keys()})
-        return trans
-
     def fp(self, filename):
         """return full path of a filename by prepending root directory"""
         return os.path.join(self.lookup_root, filename)
@@ -207,18 +194,23 @@ class RandomPerson:
 
         # store field order from original address table--
         # used by output functions
-        self.fieldorder = csv.reader(open(filename)).next()
+        # TODO-- output fieldorder should probably be rethought
+        # Input address data might have nothing in common with
+        # output address data order
+        fieldorder = csv.reader(open(filename)).next()
+        fieldorder = [fieldmap.INCOMING_TRANSLATION[r] for r in fieldorder]
+        self.fieldorder = [r for r in fieldorder if not r]
         # load in all addresses for random-access
-        addresses = list(csv.DictReader(open(filename)))
+        addresses = tuple(csv.DictReader(open(filename)))
+        # translate all the addresses for processing
+        addresses = tuple(fieldmap.translateIn(address) for address in addresses)
         while True:
-            k = random.choice(addresses)
-            k = self.translateIn(k, fieldmap.OUTLOOK_MAP_INCOMING)
+            yield random.choice(addresses)
 #            k[self.website_fld] = \
 #                self._map_fields(
 #                    random.choice(addresses),
 #                    fieldmap.OUTLOOK_MAP_INCOMING
 #                    )[self.website_fld]
-            yield k
 
     def gendered_name(self):
         """
@@ -246,7 +238,7 @@ class RandomPerson:
             }
 
     def person(self):
-        """generator returning random but realistic personal data:
+        """generator returning random but fairly realistic personal data:
         name, sex, address, username, password, birthday, email,
         website etc. Data is modelled on an existing
         address list and name frequency tables, with various fields
@@ -257,6 +249,7 @@ class RandomPerson:
             person = self.address_generator.next()
             # Disguise address-- change all numbers
             # First randomise numbers in first line of address
+            print(person)
             firstline = re.split("(^[0-9]+)", person[self.firstlineaddress_fld])
             # If no numbers in address, leave as is
             if len(firstline) != 1:
@@ -296,6 +289,7 @@ class RandomPerson:
         """Return random birthdays (string, dd/mm/yyyy). Attempts to distribute birthdays realistically."""
         # Normal Distribution by default
         # See http://en.wikipedia.org/wiki/Median_age for population models
+        # TODO-- sex differences
         birthyear = int(random.normalvariate(1960, 15))
         birthmonth = random.randint(1, 12)
         monthlen = (31,28,31,30,31,30,31,31,30,31,30,31)
@@ -328,22 +322,28 @@ class RandomPerson:
             if output_filetype == 'csv':
                 # Write heading row in order of original contacts table
                 # todo-nm outgoing translations passim
-                field_header = [fieldmap.OUTLOOK_MAP_INCOMING[r]
+                print (self.fieldorder)
+                field_header = [fieldmap.OUTGOING_TRANSLATION[r]
                                 for r
                                 in self.fieldorder
-                                if fieldmap.OUTLOOK_MAP_INCOMING[r]]
+                                if fieldmap.OUTGOING_TRANSLATION[r]]
                 wtr = csv.DictWriter(outputfile, field_header, extrasaction='ignore')
                 wtr.writeheader()
             person_id = id_start
             for i in range(no_of_people):
                 if output_filetype == 'csv':
-                    p = self.translateOut(np.next())
+                    p = fieldmap.translateOut(np.next())
                     wtr.writerow(p)
                 elif output_filetype == 'django_yaml_fixture':
+                    p = fieldmap.translateOut(np.next())
+                    print(p)
                     outputfile.write(
                         yaml.dump([{ 'model' : yaml_entity,
                                         'pk' : person_id,
-                                    'fields' : self.translateOut(np.next())}]))
+                                    'fields' : p}
+                                  ]
+                        )
+                    )
                 person_id += id_step
 
 # todo optional primary key, currently only implemented for YAML fixture
