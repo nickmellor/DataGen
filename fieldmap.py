@@ -1,21 +1,17 @@
 __author__ = 'nick'
 """
 *********************** Translation Engine for NAMEGEN ******************************
-NameGen translates an address database into its internal format, then translates it
-into a final output format to suit the database, application or other fixed format
-on the receiving end of NameGen's random contact data.
+NameGen translates an address database into its internal format, shuffles it up
+then translates it into a final output format to suit the database, application or
+other fixed format on the receiving end of NameGen's random contact data.
 
-This file contains the machinery and data for translating between input, internal
+This file contains the code and data for translating between input, internal
  and output formats
 *************************************************************************************
 
 """
 
-# NB null entries are not imported
-
 # master list of field names used internally
-# this is what things are called inside the program, which can be different
-# from the name it has in the input and output data
 INTERNAL_NAMES = ('birthday', 'salutation', 'first_name', 'last_name', 'mob', 'phone',
                   'email', 'street', 'state', 'suburb_town', 'postal_code',
                   'sex', 'title', 'website', 'password', 'position', 'company')
@@ -79,11 +75,11 @@ SOME_OUTPUT_FORMAT = {
     'title'       : 'title',
     'sex'         : 'gender',
     'position'    : None,
-    'phone'       : 'phone',
+    'phone'       : 'telephone',
     'state'       : 'state',
     'birthday'    : 'birthday',
-    'postal_code' : 'postal_code',
-    'suburb_town' : 'suburb_town',
+    'postal_code' : 'zip',
+    'suburb_town' : 'city',
     'salutation'  : 'dear',
     'mob'         : 'mob',
     'password'    : 'passwd',
