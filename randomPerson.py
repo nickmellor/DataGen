@@ -2,7 +2,7 @@ __author__ = 'nick'
 ######################### Random Person Generator ###################################
 #########################    by Nick Mellor       ###################################
 #########################     Version 1.2 alpha   ###################################
-#########################      Nov 2012           ###################################
+#########################        Mar 2013         ###################################
 """Random Personal Data Generator
 Generates random details of fictitious people by obfuscating an existing
 address list and randomly choosing new names and personal characteristics
@@ -41,11 +41,11 @@ pyyaml for test framework
 Use:
 See examples at end of module
 
-Future (Nov 2012):
+Future:
 - With the right datafiles, could mix names from different nationalities or demographics
   (e.g. software developers, middle managers, single parents) and/or generate data for other
   purposes such as organisation names, job titles, fruit and vegetable orders etc.
-- Better unit testing
+- Obfuscate production databases to protect client privacy
 
 Updates:
 Nov 2012-- unit tests, minor refactorings and code commenting
@@ -142,16 +142,6 @@ class RandomWeightedChoice:
             return self.item[i]
         # if get this far, there's a bug
         raise ValueError
-##        # which word did that spot fall on? (Linear search)
-##        i = 0
-##        end_of_list = len(self.namelist) - 1
-##        item, next_item = self.namelist[0], self.namelist[1]
-##        while i < end_of_list:
-##            if item[self.running_total_fld] <= pindrop < next_item[self.running_total_fld]:
-##                return item
-##            i += 1
-##            item, next_item = next_item, self.namelist[i]
-##        # edge case: pindrop > last word running total: means last word should be chosen
 
 
 import fieldmap
@@ -207,11 +197,6 @@ class RandomPerson:
         addresses = tuple(fieldmap.translateIn(address) for address in addresses)
         while True:
             yield random.choice(addresses)
-#            k[self.website_fld] = \
-#                self._map_fields(
-#                    random.choice(addresses),
-#                    fieldmap.OUTLOOK_MAP_INCOMING
-#                    )[self.website_fld]
 
     def gendered_name(self):
         """
