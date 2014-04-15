@@ -1,19 +1,17 @@
 __author__ = 'nick'
 """
-*********************** Translation Engine for NAMEGEN ******************************
-NameGen translates an address database into its internal format, shuffles it up
-then translates it into a final output format to suit the database, application or
-other fixed format on the receiving end of NameGen's random contact data.
+*********************** ETL Data Translation Engine *********************************
+Transforms an input database into its internal format, where it can be transformed,
+then translates field names into a format to suit the output database
 
-This file contains the code and data for translating between input, internal
- and output formats
 *************************************************************************************
 
 """
 
 # master list of field names used internally
-INTERNAL_NAMES = ('birthday', 'salutation', 'first_name', 'last_name', 'mob', 'phone',
-                  'email', 'street', 'state', 'suburb_town', 'postal_code',
+INTERNAL_NAMES = ('birthday', 'salutation', 'first_name', 'middle_name', 'last_name',
+                  'mob', 'phone', 'email',
+                  'street', 'state', 'suburb_town', 'postal_code',
                   'sex', 'title', 'website', 'password', 'position', 'company')
 
 # TODO-- optional data
@@ -22,7 +20,7 @@ INTERNAL_NAMES = ('birthday', 'salutation', 'first_name', 'last_name', 'mob', 'p
 #   -- full name as "surname, forenames"
 #   -- birthday without year
 
-class BadTranslationTable(BaseException):
+class BadTranslationTable(Exception):
     pass
 
 # Translation for Outlook CSV incoming
@@ -47,12 +45,13 @@ OUTLOOK_MAP_INCOMING = {
     'Website'     : 'website',
     'password'    : 'password'}
 
+OUTLOOK_MAP_OUTGOING = {v:k for k,v in OUTLOOK_MAP_INCOMING.items() if v}
 
 # check that internal names match incoming translations
 
 print ('Testing Incoming Translations...')
-incomings = (OUTLOOK_MAP_INCOMING,)
-for inc in incomings:
+incoming_maps = (OUTLOOK_MAP_INCOMING,)
+for inc in incoming_maps:
     fieldcheck = [(k, v, v in INTERNAL_NAMES)
                   for k, v in inc.items() if v is not None]
     errors = [f for f in fieldcheck if not f[2]]
@@ -86,10 +85,11 @@ SOME_OUTPUT_FORMAT = {
     'email'       : 'email'}
 
 print ('Testing Outgoing Translations...')
-outgoings = (SOME_OUTPUT_FORMAT,)
+outgoings = (SOME_OUTPUT_FORMAT, OUTLOOK_MAP_OUTGOING)
 for outgoing_translation in outgoings:
     fieldcheck = [(k, v, k in INTERNAL_NAMES)
-                  for k, v in outgoing_translation.items() if v is not None]
+                    for k, v
+                    in outgoing_translation.items() if v is not None]
     errors = [f for f in fieldcheck if not f[2]]
     if errors:
         print("\n".join([
@@ -101,31 +101,36 @@ for outgoing_translation in outgoings:
 # which output translation to use by default
 OUTGOING_TRANSLATION = SOME_OUTPUT_FORMAT
 
-# TODO-- output field order at least for csv)
+# TODO-- output field order at least for csv
 # TODO-- convert translation mechanisms into a class
 
-def translate(p, fieldmapping, passthru):
+def transform(p, fieldmapping, passthru=False):
     """
     convert fieldnames between internal and external formats
     Translations that would produce a blank or None fieldname are dropped
 
-    The translator is a "pass-thru" translator. If it has no instructions
-    about a particular field, it lets the field through unaltered. Only a
-    None or blank fieldname will cause that field to be dropped
+    passthru (True/False)
+    If True, the translator is a "pass-thru" translator. Any fields it doesn't know
+    what to do with it passes through unaltered.
+
+    A None or blank Value in a fieldmapping (dict) member
+    will cause that field to be dropped
+
     """
     if passthru:
-        # 'pass-thru' fields: no translation
-        trans = {k:v for k,v in p.items()
+        # 'pass-thru' any unmapped fields unchanged
+        trans = {k:v for k, v in p.items()
                  if k not in fieldmapping}
     else:
+        # only fields with a fieldmapping are output
         trans = {}
     # add the rest, dropping fields mapped to None
-    trans.update({v:p[k] for k,v
-                  in fieldmapping.items() if ((k in p.keys()) and v)})
+    trans.update({v:p[k] for k, v
+                  in fieldmapping.items() if k in p.keys() and v})
     return trans
 
-def translateIn(p, passthru=True):
-    return translate(p, fieldmapping=INCOMING_TRANSLATION, passthru=passthru)
+def translateIn(p, passthru=False):
+    return transform(p, fieldmapping=INCOMING_TRANSLATION, passthru=passthru)
 
-def translateOut(p, passthru=True):
-    return translate(p, fieldmapping=OUTGOING_TRANSLATION, passthru=passthru)
+def translateOut(p, passthru=False):
+    return transform(p, fieldmapping=OUTGOING_TRANSLATION, passthru=passthru)

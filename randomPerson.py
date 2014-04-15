@@ -1,9 +1,13 @@
 __author__ = 'nick'
-######################### Random Person Generator ###################################
-#########################    by Nick Mellor       ###################################
-#########################     Version 1.2 alpha   ###################################
-#########################        Mar 2013         ###################################
-"""Random Personal Data Generator
+
+
+########################## Random Person Generator ###################################
+##########################    by Nick Mellor       ###################################
+##########################     Version 1.2 alpha   ###################################
+##########################        Mar 2013         ###################################
+
+"""
+Random Personal Data Generator
 Generates random details of fictitious people by obfuscating an existing
 address list and randomly choosing new names and personal characteristics
 
@@ -64,35 +68,35 @@ import re
 import hashlib
 import random
 import bisect
-from filelinks import lookup_file, output_file, base_dir
+from filelinks import output_file, base_dir
 
 # Todo-- pluggable data generators
-# (e.g. generate a posse of young women entrepreneurs, a corporation
+# (e.g. generate a file of young women entrepreneurs, a corporation
 # employing mainly male building contractors, an Asian state in which there are
 # fewer women, or generate families (couples, single or double-parent, 1-5 children etc)
 
-class RandomPersonException(BaseException):
+class RandomContactException(BaseException):
     """
     base exception for any exception in the RandomPerson class
     """
     pass
 
-class NameLookupException(RandomPersonException):
+class NameLookupException(RandomContactException):
     """error in name/popularity input file"""
     pass
 
-class RandomWeightedChoice:
+class WeightedRandomChoice:
     """
-    Generates a stream of random choices (could be surname, forename, middle name, organisation, vegetable etc.)
-    based on a popularity table. More common choices are returned exponentially more frequently.
-    Common5 field contains zero for uncommon choice to 5 for very common
+    Generates a stream of random choices (could be surname, forename, shopping cart item, log entry etc.)
+    based on a popularity table. More common choices are returned more frequently.
     """
 
-    class RandomNameException(BaseException): pass
+    class RandomNameException(BaseException):
+        pass
+
+
     class MissingPopularityException(RandomNameException):
-        """
-        missing or malformed popularity field contents
-        """
+        """missing or malformed popularity field contents"""
         pass
 
     def __init__(self, filename, name_fld="Name", weightRating_fld="Common5"):
@@ -102,8 +106,9 @@ class RandomWeightedChoice:
         self.name_fld = name_fld
         self.popularity_fld = weightRating_fld
         # Weed out rows with blank name field (e.g. empty lines at end of file)
-        item_list = [k for k in csv.DictReader(open(filename))
-                    if k[name_fld].strip(' \t\n\r')]
+        with open(filename) as f:
+            item_list = [k for k in csv.DictReader(f)
+                        if k[name_fld].strip(' \t\n\r')]
         self.item = []
         self.weight_ceiling = []
         stack_weight = 0.0
@@ -113,10 +118,9 @@ class RandomWeightedChoice:
                 word_weight = math.exp(float(choice[self.popularity_fld]))
             except:
                 raise self.MissingPopularityException(
-                    "Weight should be 0..5 on name %s in file %s" %
-                    (choice[name_fld], filename))
-            # a name is matched if it is the first
-            # name with cumulative weight > pindrop
+                    "Weight should be 0..5 on name {0} in file {1}".format(
+                        (choice[name_fld], filename)))
+            # a name is matched if it is the first name with cumulative weight > pindrop
             stack_weight += word_weight
             self.item.append(choice)
             self.weight_ceiling.append(stack_weight)
@@ -127,29 +131,31 @@ class RandomWeightedChoice:
     def name(self):
         """
         returns a random name with frequency based on a subjective
-        popularity rating e.g. for male forenames, "John" will be emitted often,
+        popularity rating held in two files, one for male, one for female
+        e.g. for male forenames, "John" will be emitted often,
         "Bartholomew" rarely
         """
-        #print (self.all())
         return self.all()[self.name_fld]
 
     def all(self):
         """return name and pass through other information in lookup table"""
-        # pick a random spot in the popularity interval over all words
+        # pick a random item in the popularity interval over all words
+        return self.item[self._select()]
+
+    def _select(self):
         pindrop = random.uniform(0.0, self.stack_weight)
         i = bisect.bisect_left(self.weight_ceiling, pindrop)
         if i != len(self.weight_ceiling):
-            return self.item[i]
-        # if get this far, there's a bug
+            return i
         raise ValueError
 
 
 import fieldmap
-class RandomPerson:
+class RandomContact:
     """
-    generate a "person" record with random but believable personal data
+    generate a contact record with random but believable personal data
     """
-    class NegSampleSizeException(RandomPersonException):
+    class NegSampleSizeException(RandomContactException):
         """
         Negative or zero sample size passed to .save_csv
         """
@@ -166,11 +172,11 @@ class RandomPerson:
         # be of different sizes and use different distributions of popularity weighting
         # without skewing the overall numbers of male and female names generated
         self.female_forename_generator = \
-            RandomWeightedChoice(self.fp("Forenames_female.csv"), name_fld="Forename")
+            WeightedRandomChoice(self.fp("Forenames_female.csv"), name_fld="Forename")
         self.male_forename_generator = \
-            RandomWeightedChoice(self.fp("Forenames_male.csv"), name_fld="Forename")
+            WeightedRandomChoice(self.fp("Forenames_male.csv"), name_fld="Forename")
         self.surname_generator = \
-            RandomWeightedChoice(self.fp("Surnames.csv"), name_fld="Surname")
+            WeightedRandomChoice(self.fp("Surnames.csv"), name_fld="Surname")
         self.address_generator = self.address(self.fp("Addresses.csv"))
         self.fieldorder = []
 
@@ -203,7 +209,7 @@ class RandomPerson:
         generate forenames, surname and sex
         Forenames must match in gender
         e.g. "Sarah Jane" and "Robert James" are okay
-        but not "Alice Brett" or "Rose Frank"
+        but not "Alice Brett" or "Frank Rose"
         """
         while True:
             # Flip between male and female name generators at statistically credible rate
@@ -235,7 +241,6 @@ class RandomPerson:
             person = self.address_generator.next()
             # Disguise address-- change all numbers
             # First randomise numbers in first line of address
-            #print(person)
             firstline = re.split("(^[0-9]+)", person[self.firstlineaddress_fld])
             # If no numbers in address, leave as is
             if len(firstline) != 1:
@@ -322,7 +327,7 @@ class RandomPerson:
                     wtr.writerow(p)
                 elif output_filetype == 'django_yaml_fixture':
                     p = fieldmap.translateOut(np.next())
-                    print('map', p)
+                    #print('map', p)
                     outputfile.write(
                         yaml.dump([{ 'model' : yaml_entity,
                                         'pk' : person_id,
@@ -342,17 +347,16 @@ if __name__ == "__main__":
     # save a file of random people
     if generate_file:
         no_of_people = 50
-        RandomPerson().save(no_of_people,
+        RandomContact().save(no_of_people,
                             output_filename=output_file("testing.csv"),
                             output_filetype='csv')
-        RandomPerson().save(no_of_people,
+        RandomContact().save(no_of_people,
                             output_filename=output_file("testing.yaml"),
                             output_filetype='django_yaml_fixture',
-                            yaml_entity='groceries.Customer')
+                            yaml_entity='harv2.Customer')
     else:
         # demonstrate producing a stream of people of any length
-        # TODO still needs output translation. Only .save implemented
-        new_contact = RandomPerson().person()
+        new_contact = RandomContact().person()
         justnames = True
         if justnames:
             for i in range(50):

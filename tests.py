@@ -3,7 +3,7 @@ __author__ = 'nick'
 import unittest
 import csv
 import os
-from randomPerson import RandomWeightedChoice, RandomPerson
+from randomPerson import WeightedRandomChoice, RandomContact
 from filelinks import test_data_input_file, test_data_output_file
 from collections import Counter
 
@@ -35,7 +35,7 @@ class TestRandomPerson(unittest.TestCase):
     def test_RN_Handles_BlankLines(self):
         # make sure the name lookup initialisers deal well with empty lines
         self.name_generator = \
-            RandomWeightedChoice(test_data_input_file("lookupwithgaps.csv"), name_fld="Forename")
+            WeightedRandomChoice(test_data_input_file("lookupwithgaps.csv"), name_fld="Forename")
         self.assertEqual(
             len(self.name_generator.item),
             len(list(csv.DictReader(open(test_data_input_file("lookupwithgaps.csv")))))
@@ -43,8 +43,8 @@ class TestRandomPerson(unittest.TestCase):
 
     def test_RN_Handles_NonNumPopularity(self):
         # make sure the name popularity mechanisms deal with empty lines
-        with self.assertRaises(RandomWeightedChoice.MissingPopularityException):
-            name_generator = RandomWeightedChoice(
+        with self.assertRaises(WeightedRandomChoice.MissingPopularityException):
+            name_generator = WeightedRandomChoice(
                                 test_data_input_file("lookupMissingPopularity.csv"),
                                                         name_fld="Forename")
 
@@ -61,7 +61,7 @@ class TestRandomPerson(unittest.TestCase):
         # how many samples make it *extremely* unlikely that any item was not selected
         # at least once?
         # set up name generator
-        name_generator = RandomWeightedChoice(test_fname, name_fld="Forename")
+        name_generator = WeightedRandomChoice(test_fname, name_fld="Forename")
         # check all names are represented in output
         for name_check in checklist:
             for i in range(self.binary_check_sample_size):
@@ -78,12 +78,12 @@ class TestRandomPerson(unittest.TestCase):
         """
         RandomPerson().save should raise exception with negative sample sizes
         """
-        with self.assertRaises(RandomPerson.NegSampleSizeException):
-            RandomPerson().save(
+        with self.assertRaises(RandomContact.NegSampleSizeException):
+            RandomContact().save(
                 no_of_people=-1,
                 output_filename = test_data_output_file("sample-minus1-items"))
-        with self.assertRaises(RandomPerson.NegSampleSizeException):
-            RandomPerson().save(
+        with self.assertRaises(RandomContact.NegSampleSizeException):
+            RandomContact().save(
                 no_of_people=-1,
                 output_filename = test_data_output_file("sample-zero-items"))
 
@@ -95,7 +95,7 @@ class TestRandomPerson(unittest.TestCase):
 
         for no_of_people in self.small_sample_sizes:
             output_filename = numbered_sample_output_file(no_of_people)
-            RandomPerson().save(
+            RandomContact().save(
                 no_of_people,
                 output_filename=output_filename,
                 output_filetype='csv')
@@ -118,7 +118,7 @@ class TestRandomPerson(unittest.TestCase):
         def null_or_blank(s):
             return not s.strip(' \r\t\n')
 
-        name = RandomPerson().gendered_name()
+        name = RandomContact().gendered_name()
         for contact in range(self.medium_sample_size):
             n = name.next()
             cnt = 0
@@ -129,7 +129,7 @@ class TestRandomPerson(unittest.TestCase):
 
     def test_RP_sexes_roughly_even(self):
         sexes_variation_percent = 15.0
-        name = RandomPerson().gendered_name()
+        name = RandomContact().gendered_name()
         sex_count = Counter()
         for contact in range(self.binary_check_sample_size):
             p = name.next()
