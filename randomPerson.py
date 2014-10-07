@@ -211,17 +211,16 @@ class RandomContact:
         e.g. "Sarah Jane" and "Robert James" are okay
         but not "Alice Brett" or "Frank Rose"
         """
+        forename_generators = {
+                'male': self.male_forename_generator,
+                'female': self.female_forename_generator
+            }
         while True:
             # Flip between male and female name generators at statistically credible rate
-            # see http://en.wikipedia.org/wiki/Sex_ratio
-            # (using CIA estimate)
+            # see http://en.wikipedia.org/wiki/Sex_ratio (CIA estimate)
             sex = "male" if random.randint(0,1986) > 986 else "female"
-            # first name and middle name must be of same sex
-            if sex == "female":
-                forename_generator = self.female_forename_generator
-            else:
-                forename_generator = self.male_forename_generator
-
+            # Generate same-sex first and middle names
+            forename_generator = forename_generators[sex]
             yield  {
                 "first_name" : forename_generator.name(),
                 "middle_name" : forename_generator.name(),
@@ -343,32 +342,34 @@ if __name__ == "__main__":
     """
     generate a file, size no_of_people, list some names or dump all generated data to console
     """
-    generate_file = True
-    # save a file of random people
-    if generate_file:
-        no_of_people = 50
-        RandomContact().save(no_of_people,
-                            output_filename=output_file("testing.csv"),
-                            output_filetype='csv')
-        RandomContact().save(no_of_people,
-                            output_filename=output_file("testing.yaml"),
-                            output_filetype='django_yaml_fixture',
-                            yaml_entity='harv2.Customer')
-    else:
-        # demonstrate producing a stream of people of any length
-        new_contact = RandomContact().person()
-        justnames = True
-        if justnames:
-            for i in range(50):
-                p = new_contact.next()
-                print "%s, %s %s" % (p["Last Name"].upper(), p["First name"], p["Middle name"])
+    print(yaml.load(open(r"C:\Users\Nick\Documents\Other\My Python\NameGen\translations.yaml", 'r').read()))
+    if False:
+        generate_file = True
+        # save a file of random people
+        if generate_file:
+            no_of_people = 50
+            RandomContact().save(no_of_people,
+                                output_filename=output_file("testing.csv"),
+                                output_filetype='csv')
+            RandomContact().save(no_of_people,
+                                output_filename=output_file("testing.yaml"),
+                                output_filetype='django_yaml_fixture',
+                                yaml_entity='harv2.Customer')
         else:
-            for i in range(10):
-                p = new_contact.next()
-                print
-                print "=================================="
-                # print everything generated
-                print
-                for j in p.items():
-                    print "%s: %s" % (j[0], j[1])
-                print
+            # demonstrate producing a stream of people of any length
+            new_contact = RandomContact().person()
+            justnames = True
+            if justnames:
+                for i in range(50):
+                    p = new_contact.next()
+                    print "%s, %s %s" % (p["Last Name"].upper(), p["First name"], p["Middle name"])
+            else:
+                for i in range(10):
+                    p = new_contact.next()
+                    print
+                    print "=================================="
+                    # print everything generated
+                    print
+                    for j in p.items():
+                        print "%s: %s" % (j[0], j[1])
+                    print

@@ -1,18 +1,24 @@
 __author__ = 'nick'
 """
 *********************** ETL Data Translation Engine *********************************
-Transforms an input database into its internal format, where it can be transformed,
-then translates field names into a format to suit the output database
+Transforms an input database into NameGen's internal format, where it can be
+transformed, then translates field names into a format to suit the output database
 
 *************************************************************************************
 
 """
 
+import yaml
+import filelinks
+import os
+
 # master list of field names used internally
-INTERNAL_NAMES = ('birthday', 'salutation', 'first_name', 'middle_name', 'last_name',
-                  'mob', 'phone', 'email',
-                  'street', 'state', 'suburb_town', 'postal_code',
-                  'sex', 'title', 'website', 'password', 'position', 'company')
+cfgpath = os.path.join(filelinks.base_dir(), "translations.yaml")
+cfg = yaml.load(open(cfgpath, 'r').read())
+INTERNAL_NAMES = cfg['Internal']
+# pull in field mappings
+fmtsOut = cfg['Out']
+print cfg
 
 # TODO-- optional data
 #   -- File As
@@ -25,6 +31,7 @@ class BadTranslationTable(Exception):
 
 # Translation for Outlook CSV incoming
 # The incoming translation will be the addresses to obfuscate
+
 OUTLOOK_MAP_INCOMING = {
     'Birthday'    : None,
     'Company'     : None,
@@ -45,7 +52,7 @@ OUTLOOK_MAP_INCOMING = {
     'Website'     : 'website',
     'password'    : 'password'}
 
-OUTLOOK_MAP_OUTGOING = {v:k for k,v in OUTLOOK_MAP_INCOMING.items() if v}
+OUTLOOK_MAP_OUTGOING = {v: k for k, v in OUTLOOK_MAP_INCOMING.items() if v}
 
 # check that internal names match incoming translations
 
@@ -110,22 +117,17 @@ def transform(p, fieldmapping, passthru=False):
     Translations that would produce a blank or None fieldname are dropped
 
     passthru (True/False)
-    If True, the translator is a "pass-thru" translator. Any fields it doesn't know
-    what to do with it passes through unaltered.
-
-    A None or blank Value in a fieldmapping (dict) member
-    will cause that field to be dropped
-
+    passthru==True: Any fields without fieldmapping will pass through unaltered
+    passthru==False: if field is not in fieldmap, field will be dropped
     """
+
+    trans = {}
     if passthru:
         # 'pass-thru' any unmapped fields unchanged
-        trans = {k:v for k, v in p.items()
+        trans = {k: v for k, v in p.items()
                  if k not in fieldmapping}
-    else:
-        # only fields with a fieldmapping are output
-        trans = {}
     # add the rest, dropping fields mapped to None
-    trans.update({v:p[k] for k, v
+    trans.update({v: p[k] for k, v
                   in fieldmapping.items() if k in p.keys() and v})
     return trans
 
