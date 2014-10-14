@@ -12,13 +12,37 @@ import yaml
 import filelinks
 import os
 
+class FilterDefaultException(Exception):
+    pass
+
 # master list of field names used internally
 cfgpath = os.path.join(filelinks.base_dir(), "translations.yaml")
 cfg = yaml.load(open(cfgpath, 'r').read())
-INTERNAL_NAMES = cfg['Internal']
-# pull in field mappings
-fmtsOut = cfg['Out']
-print cfg
+INTERNAL_NAMES = cfg['Internal_fields']
+INCOMING_FILTERS = cfg['Incoming']
+#print "Incoming Filters:\n{}".format(INCOMING_FILTERS)
+OUTGOING_FILTERS = cfg['Outgoing']
+# If no outgoing filter exists for a corresponding incoming filter
+# auto-generate one by reversing field mappings
+autofilters = {fm: {v: k for k, v in INCOMING_FILTERS[fm].items() if v}
+               for fm in INCOMING_FILTERS
+               if fm not in OUTGOING_FILTERS}
+autofilters = {k: v for k, v in autofilters.items() if v}
+OUTGOING_FILTERS.update(autofilters)
+# for filt in autofilters_for:
+#     print 'filt: ', filt
+#
+#
+#     for k, v in filt.items():
+#         print 'v: ', v
+#         if v:
+#             OUTGOING_FILTERS.update(autofilters_for[filt])
+#print 'Outgoing filters:\n', OUTGOING_FILTERS
+DEFAULT_FILTER = cfg['Default_filter']
+if DEFAULT_FILTER not in INCOMING_FILTERS:
+    raise FilterDefaultException("Default filter '{}' could not be found".format(DEFAULT_FILTER))
+
+
 
 # TODO-- optional data
 #   -- File As
@@ -29,110 +53,60 @@ print cfg
 class BadTranslationTable(Exception):
     pass
 
-# Translation for Outlook CSV incoming
-# The incoming translation will be the addresses to obfuscate
-
-OUTLOOK_MAP_INCOMING = {
-    'Birthday'    : None,
-    'Company'     : None,
-    'Title'       : 'position',
-    'First name'  : 'first_name',
-    'Middle name' : None,
-    'Last Name'   : 'last_name',
-    'Mobile'      : 'mob',
-    'Phone'       : 'phone',
-    'Email'       : 'email',
-    'Fax'         : None,
-    'Street'      : "street",
-    'State'       : 'state',
-    'Suburb'      : 'suburb_town',
-    'Postcode'    : 'postal_code',
-    'Sex'         : None,
-    'Title'       : None,
-    'Website'     : 'website',
-    'password'    : 'password'}
-
-OUTLOOK_MAP_OUTGOING = {v: k for k, v in OUTLOOK_MAP_INCOMING.items() if v}
-
-# check that internal names match incoming translations
-
-print ('Testing Incoming Translations...')
-incoming_maps = (OUTLOOK_MAP_INCOMING,)
-for inc in incoming_maps:
-    fieldcheck = [(k, v, v in INTERNAL_NAMES)
-                  for k, v in inc.items() if v is not None]
-    errors = [f for f in fieldcheck if not f[2]]
+# # check that internal names match incoming translations
+#
+for filt in INCOMING_FILTERS:
+    # print filt, ":"
+    # print INCOMING_FILTERS[filt]
+    fieldcheck = [(filt, k, v, v in INTERNAL_NAMES)
+                  for k, v in INCOMING_FILTERS[filt].items() if v]
+    # print "Check {0}---\n {1}".format(filt, fieldcheck)
+    errors = [f for f in fieldcheck if not f[3]]
     if errors:
         print("\n".join([
-                "'{0}' is not an internal field (original is '{1}').".format(f[1], f[0])
+                "'{0}' is not an internal field ('from' field in incoming filter {1} is '{2}')".format(
+                    f[2], f[0], f[1])
                 for f
                 in errors]))
         raise BadTranslationTable('Fault in Incoming Translation Table')
 
-# which incoming translation to use by default
-INCOMING_TRANSLATION = OUTLOOK_MAP_INCOMING
-
-# key is internal name, value is output fieldname
-SOME_OUTPUT_FORMAT = {
-    'website'     : 'website',
-    'first_name'  : 'first_name',
-    'last_name'   : 'last_name',
-    'street'      : 'street',
-    'title'       : 'title',
-    'sex'         : 'gender',
-    'position'    : None,
-    'phone'       : 'telephone',
-    'state'       : 'state',
-    'birthday'    : 'birthday',
-    'postal_code' : 'zip',
-    'suburb_town' : 'city',
-    'salutation'  : 'dear',
-    'mob'         : 'mob',
-    'password'    : 'passwd',
-    'email'       : 'email'}
-
-print ('Testing Outgoing Translations...')
-outgoings = (SOME_OUTPUT_FORMAT, OUTLOOK_MAP_OUTGOING)
-for outgoing_translation in outgoings:
-    fieldcheck = [(k, v, k in INTERNAL_NAMES)
-                    for k, v
-                    in outgoing_translation.items() if v is not None]
-    errors = [f for f in fieldcheck if not f[2]]
+for filt in OUTGOING_FILTERS:
+    fieldcheck = [(filt, k, v, k in INTERNAL_NAMES)
+                  for k, v
+                  in OUTGOING_FILTERS[filt].items() if v is not None]
+    errors = [f for f in fieldcheck if not f[3]]
     if errors:
-        print("\n".join([
-        "'{0}' is not an internal field (output field is '{1}').".format(f[0], f[1])
-        for f
-        in errors]))
+        print("\n".join(["'{0}' is not an internal field ('from' field in outgoing filter '{1}' is '{2}')".format(
+         f[2], f[0], f[1])
+           for f
+           in errors]))
         raise BadTranslationTable('Fault in Outgoing Translation Table')
-
-# which output translation to use by default
-OUTGOING_TRANSLATION = SOME_OUTPUT_FORMAT
 
 # TODO-- output field order at least for csv
 # TODO-- convert translation mechanisms into a class
 
-def transform(p, fieldmapping, passthru=False):
-    """
-    convert fieldnames between internal and external formats
-    Translations that would produce a blank or None fieldname are dropped
-
-    passthru (True/False)
-    passthru==True: Any fields without fieldmapping will pass through unaltered
-    passthru==False: if field is not in fieldmap, field will be dropped
-    """
-
-    trans = {}
-    if passthru:
-        # 'pass-thru' any unmapped fields unchanged
-        trans = {k: v for k, v in p.items()
-                 if k not in fieldmapping}
-    # add the rest, dropping fields mapped to None
-    trans.update({v: p[k] for k, v
-                  in fieldmapping.items() if k in p.keys() and v})
-    return trans
-
-def translateIn(p, passthru=False):
-    return transform(p, fieldmapping=INCOMING_TRANSLATION, passthru=passthru)
-
-def translateOut(p, passthru=False):
-    return transform(p, fieldmapping=OUTGOING_TRANSLATION, passthru=passthru)
+# def transform(p, fieldmapping, passthru=False):
+#     """
+#     convert fieldnames between internal and external formats
+#     Translations that would produce a blank or None fieldname are dropped
+#
+#     passthru (True/False)
+#     passthru==True: Any fields without fieldmapping will pass through unaltered
+#     passthru==False: if field is not in fieldmap, field will be dropped
+#     """
+#
+#     trans = {}
+#     if passthru:
+#         # 'pass-thru' any unmapped fields unchanged
+#         trans = {k: v for k, v in p.items()
+#                  if k not in fieldmapping}
+#     # add the rest, dropping fields mapped to None
+#     trans.update({v: p[k] for k, v
+#                   in fieldmapping.items() if k in p.keys() and v})
+#     return trans
+#
+# def translateIn(p, passthru=False):
+#     return transform(p, fieldmapping=INCOMING_TRANSLATION, passthru=passthru)
+#
+# def translateOut(p, passthru=False):
+#     return transform(p, fieldmapping=OUTGOING_TRANSLATION, passthru=passthru)
