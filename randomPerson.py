@@ -336,7 +336,7 @@ class RandomContact:
                     )
                 person_id += id_step
 
-# todo optional primary key, currently only implemented for YAML fixture
+# todo optional primary clave, currently only implemented for YAML fixture
 
 if __name__ == "__main__":
     """

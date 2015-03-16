@@ -3,7 +3,7 @@ __author__ = 'nick'
 """
 Filelinks.py
 Set of functions allowing code and data to find each other locally
-Allows code to run from a memory key, network or local hard disc without
+Allows code to run from a memory clave, network or local hard disc without
 hard-coding file paths
 """
 
