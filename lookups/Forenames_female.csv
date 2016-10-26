@@ -1,4 +1,4 @@
-"Forename","Sex","Common5"
+"forename","sex","expweight"
 "Abby","f",2
 "Abigail","f",3
 "Ada","f",2
@@ -19,8 +19,8 @@
 "Alexandra","f",4
 "Alexi","f",1
 "Alice","f",4
-"Alicea","f",2
-"Alicia","f",1
+"Alicea","f",1
+"Alicia","f",2
 "Aline","f",1
 "Alison","f",5
 "Allis","f",1
@@ -177,8 +177,8 @@
 "Doreas","f",1
 "Doreen","f",3
 "Doris","f",3
-"Dorothea","f",3
-"Dorothy","f",2
+"Dorothea","f",2
+"Dorothy","f",3
 "Dortha","f",1
 "Drucilla","f",1
 "Dulcie","f",1

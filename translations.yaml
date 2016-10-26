@@ -21,7 +21,6 @@ Internal_fields:
     - company
 
 Incoming:
-
     OutlookCSV:
         Title: position
         Birthday:
@@ -43,7 +42,6 @@ Incoming:
         password: password
 
     Google Contacts:
-
         Name:
         Given Name:
         Additional Name:
