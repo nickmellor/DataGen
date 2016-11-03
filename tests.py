@@ -3,7 +3,7 @@ __author__ = 'nick'
 import unittest
 import csv
 import os
-from randomPerson import WeightedRandomChoice, RandomContact
+from randomPerson import WeightedChoice, RandomContact
 from filelinks import test_data_input_file, test_data_output_file
 from collections import Counter
 
@@ -35,16 +35,16 @@ class TestRandomPerson(unittest.TestCase):
     def test_RN_Handles_BlankLines(self):
         # make sure the name lookup initialisers deal well with empty lines
         self.name_generator = \
-            WeightedRandomChoice(test_data_input_file("lookupwithgaps.csv"), name_fld="Forename")
+            WeightedChoice(test_data_input_file("lookupwithgaps.csv"), name_fld="Forename")
         self.assertEqual(
-            len(self.name_generator.item),
+            len(self.name_generator.items),
             len(list(csv.DictReader(open(test_data_input_file("lookupwithgaps.csv")))))
         )
 
     def test_RN_Handles_NonNumPopularity(self):
         # make sure the name popularity mechanisms deal with empty lines
-        with self.assertRaises(WeightedRandomChoice.MissingPopularityException):
-            name_generator = WeightedRandomChoice(
+        with self.assertRaises(WeightedChoice.MissingPopularityException):
+            name_generator = WeightedChoice(
                                 test_data_input_file("lookupMissingPopularity.csv"),
                                                         name_fld="Forename")
 
@@ -61,7 +61,7 @@ class TestRandomPerson(unittest.TestCase):
         # how many samples make it *extremely* unlikely that any item was not selected
         # at least once?
         # set up name generator
-        name_generator = WeightedRandomChoice(test_fname, name_fld="Forename")
+        name_generator = WeightedChoice(test_fname, name_fld="Forename")
         # check all names are represented in output
         for name_check in checklist:
             for i in range(self.binary_check_sample_size):
@@ -70,7 +70,7 @@ class TestRandomPerson(unittest.TestCase):
             else:
                 self.fail("Name %s (1 of %d) was not generated even after %d iterations"\
                           % (name_check["Forename"],
-                             len(name_generator.item),
+                             len(name_generator.items),
                              self.binary_check_sample_size))
 
 
