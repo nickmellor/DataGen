@@ -3,7 +3,7 @@ from filelinks import lookup_file
 from random import randint
 
 
-class Name:
+class NameBuilder:
 
     """
         separate generators for male and female names means lookup tables can
@@ -38,6 +38,6 @@ class Name:
 
 
 if __name__ == '__main__':
-    n = Name()
+    n = NameBuilder()
     for i in range(5):
         print(next(n.gendered_name()))

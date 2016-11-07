@@ -6,7 +6,7 @@ from fieldmap import translateIn, translateOut
 from birthday import birthday
 import yaml
 from filelinks import base_dir
-from weighted import WeightedChoice
+from namebuilder import NameBuilder
 
 
 class RandomContact:
@@ -19,33 +19,15 @@ class RandomContact:
         lookup_root specifies where to find lookup tables
         """
         self.lookup_root = lookup_root
-        self.firstlineaddress_fld = "street"
+
         self.website_fld = "website"
-        self.address_generator = self.address(self.lookup_file("Addresses.csv"))
+
         self.fieldorder = []
+        self.name_builder = NameBuilder()
 
     def lookup_file(self, filename):
         """return full path of a filename by prepending root directory"""
         return os.path.join(self.lookup_root, filename)
-
-    def address(self, filename):
-        """generator returning a random address"""
-
-        # store field order from original address table--
-        # used by output functions
-        # TODO-- output fieldorder should probably be rethought
-        # Input address data might have nothing in common with
-        # output address data order
-        fieldorder = next(csv.reader(open(filename)))
-        # fieldorder = dict(zip(fieldorder, fieldorder))
-        # fieldorder = translateIn(fieldorder)
-        self.fieldorder = [r for r in fieldorder if r]
-        # load in all addresses for random-access
-        addresses = tuple(csv.DictReader(open(filename)))
-        # translate all the addresses for processing
-        addresses = tuple(translateIn(address) for address in addresses)
-        while True:
-            yield random.choice(addresses)
 
     def person(self):
         """generator returning random but fairly realistic personal data:
@@ -58,7 +40,7 @@ class RandomContact:
             person = self.obfuscate_address()
             person["birthday"] = birthday()
             # Override or insert surname and forename info
-            person.update(next(self.gendered_name()))
+            person.update(next(self.name.gendered_name()))
             username = self.email_address(person)
             # Use username for email as well
             # Email domain name could be more sophisticated...
@@ -71,24 +53,6 @@ class RandomContact:
     def email_address(self, person):
         return "{name}-{hash}".format(name=person["first_name"],
             hash=hashlib.md5(repr(person).encode()).hexdigest()[:5])
-
-    def obfuscate_address(self):
-        person = next(self.address_generator)
-        firstline = self.rewrite_address_numbers(person)
-        person[self.firstlineaddress_fld] = "".join(firstline)
-        return person
-
-    def rewrite_address_numbers(self, person):
-        firstline = re.split("(^[0-9]+)", person[self.firstlineaddress_fld])
-        if len(firstline) != 1:
-            for el in firstline:
-                # every number that isn't a house number (street no, Level, flat etc.) is
-                # replaced by a small number
-                if el.isdigit(): el = str(random.randint(1, 5))
-            if firstline[0] == "":
-                # Initial number: choose from larger range for house numbers, including odd and even
-                firstline[1] = str(random.randint(0, 75) * 3 + 1)
-        return firstline
 
     def save(self, no_of_people, output_filename, output_filetype='django_yaml_fixture',
         yaml_entity='Customer', id_start=1, id_step=1):
