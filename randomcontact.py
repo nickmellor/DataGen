@@ -5,6 +5,8 @@ import re
 from fieldmap import translateIn, translateOut
 from birthday import birthday
 import yaml
+from filelinks import base_dir
+from weighted import WeightedChoice
 
 
 class RandomContact:
@@ -19,19 +21,10 @@ class RandomContact:
         self.lookup_root = lookup_root
         self.firstlineaddress_fld = "street"
         self.website_fld = "website"
-        # separate generators for male and female names means lookup tables can
-        # be of different sizes and use different distributions of popularity weighting
-        # without skewing the overall numbers of male and female names generated
-        self.female_forename_generator = \
-            WeightedChoice(self.fp("Forenames_female.csv"), name_fld="forename")
-        self.male_forename_generator = \
-            WeightedChoice(self.fp("Forenames_male.csv"), name_fld="forename")
-        self.surname_generator = \
-            WeightedChoice(self.fp("Surnames.csv"), name_fld="surname")
-        self.address_generator = self.address(self.fp("Addresses.csv"))
+        self.address_generator = self.address(self.lookup_file("Addresses.csv"))
         self.fieldorder = []
 
-    def fp(self, filename):
+    def lookup_file(self, filename):
         """return full path of a filename by prepending root directory"""
         return os.path.join(self.lookup_root, filename)
 
@@ -53,30 +46,6 @@ class RandomContact:
         addresses = tuple(translateIn(address) for address in addresses)
         while True:
             yield random.choice(addresses)
-
-    def gendered_name(self):
-        """
-        generate forenames, surname and sex
-        Forenames must match in gender
-        e.g. "Sarah Jane" and "Robert James" are okay
-        but not "Alice Brett" or "Frank Rose"
-        """
-        forename_generators = {
-            'male': self.male_forename_generator,
-            'female': self.female_forename_generator
-        }
-        while True:
-            # Flip between male and female name generators at statistically credible rate
-            # see http://en.wikipedia.org/wiki/Sex_ratio (CIA estimate)
-            sex = "male" if random.randint(0, 1986) > 986 else "female"
-            # Generate same-sex first and middle names
-            forename_generator = forename_generators[sex]
-            yield {
-                "first_name": forename_generator.name(),
-                "middle_name": forename_generator.name(),
-                "last_name": self.surname_generator.name(),
-                "sex": sex
-            }
 
     def person(self):
         """generator returning random but fairly realistic personal data:
