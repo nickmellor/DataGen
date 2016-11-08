@@ -1,8 +1,8 @@
 __author__ = 'nick'
 """
-*********************** ETL Data Translation Engine *********************************
-Transforms an input database into NameGen's internal format, where it can be
-transformed, then translates field names into a format to suit the output database
+********************************** Field Translator *********************************
+Transforms an input record into internal format
+translates internal record into a format to suit the output
 
 *************************************************************************************
 
@@ -116,4 +116,4 @@ def translateIn(p, passthru=False):
 
 
 def translateOut(p, passthru=False):
-    return transform(p, fieldmapping=OUTGOING_FILTERS, passthru=passthru)
+    return transform(p, fieldmapping=OUTGOING_FILTERS['OutlookCSV'], passthru=passthru)

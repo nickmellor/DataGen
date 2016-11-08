@@ -22,15 +22,6 @@ Internal_fields:
 
 Incoming:
     OutlookCSV:
-        Title: position
-        Birthday:
-        Company:
-        First name: first_name
-        Middle name:
-        Last Name: last_name
-        Mobile: mob
-        Phone: phone
-        Email: email
         Fax:
         Street: street
         State: state
@@ -38,8 +29,6 @@ Incoming:
         Postcode: postal_code
         Sex:
         Title:
-        Website: URL
-        password: password
 
     Google Contacts:
         Name:
@@ -115,5 +104,17 @@ Incoming:
 
 Outgoing:
     OutlookCSV:
-        position: title
+        position: Title
+        first_name: First name
+        middle_name: Middle name
+        last_name: Last Name
+        mob: Mobile
+        phone: Phone
+        email: Email
+        street: Street
+        state: State
+        suburb_town: Suburb
         postal_code: Postcode
+        sex: Sex
+        URL: Website
+        password: password

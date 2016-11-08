@@ -7,6 +7,7 @@ from birthday import birthday
 import yaml
 from filelinks import base_dir
 from namebuilder import NameBuilder
+import csv
 
 
 class RandomContact:
@@ -19,9 +20,7 @@ class RandomContact:
         lookup_root specifies where to find lookup tables
         """
         self.lookup_root = lookup_root
-
         self.website_fld = "website"
-
         self.fieldorder = []
         self.name_builder = NameBuilder()
 
