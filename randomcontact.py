@@ -2,11 +2,14 @@ import fieldmap
 import os
 import hashlib
 import re
+
+from exceptions import NegSampleSizeException
 from fieldmap import translateIn, translateOut
 from birthday import birthday
 import yaml
 from filelinks import base_dir
 from namebuilder import NameBuilder
+from addressbuilder import AddressBuilder
 import csv
 
 
@@ -15,7 +18,11 @@ class RandomContact:
     generate a contact record with random but believable personal data
     """
 
-    def __init__(self, lookup_root=os.path.normpath(os.path.join(base_dir(), "lookups"))):
+    def __init__(self,
+                 lookup_root=os.path.normpath(os.path.join(base_dir(), "lookups")),
+                 email_prefix='rp_',
+                 email_domain='@gmail.com',
+                 password='test123'):
         """
         lookup_root specifies where to find lookup tables
         """
@@ -23,33 +30,39 @@ class RandomContact:
         self.website_fld = "website"
         self.fieldorder = []
         self.name_builder = NameBuilder()
+        self.address_builder = AddressBuilder()
+        self.email_prefix = email_prefix
+        self.email_domain = email_domain
+        self.password = password
 
-    def lookup_file(self, filename):
-        """return full path of a filename by prepending root directory"""
-        return os.path.join(self.lookup_root, filename)
-
-    def person(self):
-        """generator returning random but fairly realistic personal data:
-        name, sex, address, username, password, birthday, email,
-        website etc. Data is modelled on an existing
+    def contact(self):
+        """
+        generator returning random but fairly realistic personal contact details
+        Data is modelled on an existing
         address list and name frequency tables, with various fields
         obfuscated for privacy."""
         id = 1
         while True:
-            person = self.obfuscate_address()
+            person = next(self.address_builder.obfuscated_address())
             person["birthday"] = birthday()
             # Override or insert surname and forename info
-            person.update(next(self.name.gendered_name()))
+            person.update(next(self.name_builder.gendered_name()))
             username = self.email_address(person)
             # Use username for email as well
             # Email domain name could be more sophisticated...
-            person.update({"email": username + "@bendigotraders.org",
+            person.update({"email": self.email_address(person),
                            "username": username,
-                           "password": "test"})
+                           "password": "test123"})
             yield person
             id += 1
 
     def email_address(self, person):
+        return "{base}+{prefix}{username}@{domain}".format(prefix=self.email_prefix,
+                    base='thebalancepro', username=self.username(person),
+                    domain=self.email_domain)
+
+    @staticmethod
+    def username(person):
         return "{name}-{hash}".format(name=person["first_name"],
             hash=hashlib.md5(repr(person).encode()).hexdigest()[:5])
 
@@ -57,9 +70,9 @@ class RandomContact:
         yaml_entity='Customer', id_start=1, id_step=1):
         """compile a list of people and save to a file"""
         if no_of_people <= 0:
-            raise self.NegSampleSizeException("Can't generate zero or negative sample sizes! (n = %d)" % (no_of_people))
+            raise NegSampleSizeException("Can't generate zero or negative sample sizes! (n = %d)" % (no_of_people))
         with file(output_filename, "wb") as outputfile:
-            np = self.person()
+            np = self.contact()
             # swallow empty first instance
             dontuse = list(next(np).keys())
             if output_filetype == 'csv':
@@ -114,7 +127,7 @@ if __name__ == "__main__":
                                  yaml_entity='harv2.Customer')
         else:
             # demonstrate producing a stream of people of any length
-            new_contact = RandomContact().person()
+            new_contact = RandomContact().contact()
             justnames = False
             if justnames:
                 for i in range(50):

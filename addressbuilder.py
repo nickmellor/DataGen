@@ -20,13 +20,13 @@ class AddressBuilder:
         while True:
             yield random.choice(self.addresses)
 
-    def obfuscate_address(self):
+    def obfuscated_address(self):
         while 1:
             address = next(self._address())
             if address[self.firstline_field]:
                 break
         address[self.firstline_field] = self.obfuscated_firstline(address)
-        return address
+        yield address
         # return address
 
     def obfuscated_firstline(self, person):
@@ -48,7 +48,7 @@ class AddressBuilder:
 if __name__ == '__main__':
     n = AddressBuilder()
     for i in range(5):
-        print(n.obfuscate_address())
+        print(n.obfuscated_address())
 
 
 
