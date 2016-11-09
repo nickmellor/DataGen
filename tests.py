@@ -1,17 +1,17 @@
-__author__ = 'nick'
-
 import unittest
 import csv
 import os
-from randomPerson import WeightedChoice, RandomContact
+from randomcontact import RandomContact
+from weighted import WeightedChoice
 from filelinks import test_data_input_file, test_data_output_file
 from collections import Counter
+
 
 def numbered_sample_output_file(no):
     return test_data_output_file('sample-' + str(no) + '.csv')
 
-class TestRandomPerson(unittest.TestCase):
 
+class TestRandomContact(unittest.TestCase):
 
     def setUp(self):
         # iterations to ensure secure testing of binary values (e.g. sex)
@@ -35,7 +35,7 @@ class TestRandomPerson(unittest.TestCase):
     def test_RN_Handles_BlankLines(self):
         # make sure the name lookup initialisers deal well with empty lines
         self.name_generator = \
-            WeightedChoice(test_data_input_file("lookupwithgaps.csv"), name_fld="Forename")
+            WeightedChoice(test_data_input_file("lookupwithgaps.csv"), name_field="Forename")
         self.assertEqual(
             len(self.name_generator.items),
             len(list(csv.DictReader(open(test_data_input_file("lookupwithgaps.csv")))))
@@ -46,7 +46,7 @@ class TestRandomPerson(unittest.TestCase):
         with self.assertRaises(WeightedChoice.MissingPopularityException):
             name_generator = WeightedChoice(
                                 test_data_input_file("lookupMissingPopularity.csv"),
-                                                        name_fld="Forename")
+                                                        name_field="Forename")
 
     def test_RN_Uses_All_Names(self):
         """
@@ -61,7 +61,7 @@ class TestRandomPerson(unittest.TestCase):
         # how many samples make it *extremely* unlikely that any item was not selected
         # at least once?
         # set up name generator
-        name_generator = WeightedChoice(test_fname, name_fld="Forename")
+        name_generator = WeightedChoice(test_fname, name_field="Forename")
         # check all names are represented in output
         for name_check in checklist:
             for i in range(self.binary_check_sample_size):
@@ -134,7 +134,7 @@ class TestRandomPerson(unittest.TestCase):
         for contact in range(self.binary_check_sample_size):
             p = name.next()
             sex_count[p['sex']] += 1
-        print sex_count.items()
+        print(sex_count.items())
         # check sexes are equally numbered to within a reasonable tolerance (e.g. 10%)
         # Males outnumber females by a percentage point or two
         self.assertAlmostEqual(
@@ -144,5 +144,5 @@ class TestRandomPerson(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestRandomPerson)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestRandomContact)
     unittest.TextTestRunner(verbosity=2).run(suite)
