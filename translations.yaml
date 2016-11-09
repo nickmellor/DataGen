@@ -1,6 +1,9 @@
 Default_filter: OutlookCSV
 Internal_fields:
-    - birthday
+    - dob
+    - dob_day
+    - dob_month
+    - dob_year
     - salutation
     - first_name
     - middle_name
@@ -118,3 +121,4 @@ Outgoing:
         sex: Sex
         URL: Website
         password: password
+        dob: dob
