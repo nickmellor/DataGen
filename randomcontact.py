@@ -12,7 +12,7 @@ class RandomContact:
     """
 
     def __init__(self, lookup_root=os.path.normpath(os.path.join(base_dir(), "lookups")),
-                 email_prefix='rp_', email_domain='@gmail.com', password='test123'):
+                 email_prefix='rp_', email_domain='gmail.com', password='test123'):
         """
         lookup_root specifies where to find lookup tables
         """

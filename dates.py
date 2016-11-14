@@ -22,10 +22,13 @@ def birthday():
 
 
 def date_fields(name, day, month, year):
+    day = "{0:02d}".format(day),
+    month = "{0:02d}".format(month),
+    year = str(year)
     return {
-        name: "{0:02d}/{1:02d}/{2:02d}".format(day, month, year),
-        name + '_day': str(day),
-        name + '_month': str(month),
-        name + '_year': str(year)
+        name: "{day}/{month}/{year}".format(day=day, month=month, year=year),
+        name + '_day': day,
+        name + '_month': month,
+        name + '_year': year
     }
 

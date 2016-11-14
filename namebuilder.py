@@ -33,7 +33,9 @@ class NameBuilder:
                 "first_name": forename_generator.name(),
                 "middle_name": forename_generator.name(),
                 "last_name": self.surname_generator.name(),
-                "sex": 'female' if sex_female else 'male'
+                "sex": 'female' if sex_female else 'male',
+                'sex_female': sex_female,
+                'sex_male': not sex_female
             }
 
 
