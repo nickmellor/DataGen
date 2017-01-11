@@ -18,7 +18,7 @@ class NameBuilder:
 
     def gendered_name(self):
         """
-        generate forenames, surname and sex
+        generate forenames, surname and gender
         Forenames must match in gender
         e.g. "Sarah Jane" and "Robert James" are okay
         but not "Alice Brett" or "Brian Rose"

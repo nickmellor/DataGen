@@ -1,6 +1,7 @@
 import unittest
 import csv
 import os
+from exceptions import MissingPopularityException, NegSampleSizeException
 from randomcontact import RandomContact
 from weighted import WeightedChoice
 from filelinks import test_data_input_file, test_data_output_file
@@ -43,7 +44,7 @@ class TestRandomContact(unittest.TestCase):
 
     def test_RN_Handles_NonNumPopularity(self):
         # make sure the name popularity mechanisms deal with empty lines
-        with self.assertRaises(WeightedChoice.MissingPopularityException):
+        with self.assertRaises(MissingPopularityException):
             name_generator = WeightedChoice(
                                 test_data_input_file("lookupMissingPopularity.csv"),
                                                         name_field="Forename")
@@ -78,11 +79,11 @@ class TestRandomContact(unittest.TestCase):
         """
         RandomPerson().save should raise exception with negative sample sizes
         """
-        with self.assertRaises(RandomContact.NegSampleSizeException):
+        with self.assertRaises(NegSampleSizeException):
             RandomContact().save(
                 no_of_people=-1,
                 output_filename = test_data_output_file("sample-minus1-items"))
-        with self.assertRaises(RandomContact.NegSampleSizeException):
+        with self.assertRaises(NegSampleSizeException):
             RandomContact().save(
                 no_of_people=-1,
                 output_filename = test_data_output_file("sample-zero-items"))

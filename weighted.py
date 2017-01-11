@@ -2,6 +2,7 @@ import csv
 import math
 from random import uniform
 from bisect import bisect_left
+from exceptions import MissingPopularityException
 
 
 class WeightedChoice:
@@ -35,7 +36,7 @@ class WeightedChoice:
         elif weight in item:
             return float(item[weight])
         else:
-            raise self.MissingPopularityException(
+            raise MissingPopularityException(
                 "No weight field on name {0} in file {1}".format(
                     (item[self.name_field], self.filename)))
 
