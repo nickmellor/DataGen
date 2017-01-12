@@ -174,11 +174,11 @@ class RandomPerson:
         # be of different sizes and use different distributions of popularity weighting
         # without skewing the overall numbers of male and female names generated
         self.female_forename_generator = \
-            RandomWeightedChoice(self.fp("Forenames_female.csv"), name_fld="Forename")
+            RandomWeightedChoice(self.fp("forenames_female.csv"), name_fld="Forename")
         self.male_forename_generator = \
-            RandomWeightedChoice(self.fp("Forenames_male.csv"), name_fld="Forename")
+            RandomWeightedChoice(self.fp("forenames_male.csv"), name_fld="Forename")
         self.surname_generator = \
-            RandomWeightedChoice(self.fp("Surnames.csv"), name_fld="Surname")
+            RandomWeightedChoice(self.fp("surnames.csv"), name_fld="Surname")
         self.address_generator = self.address(self.fp("Addresses.csv"))
         self.fieldorder = []
 
