@@ -28,9 +28,15 @@ Use Out of the Box
 ------------------
 
 This application should download and run as is on a hard disk or memory key in any OS
-so long as Python is installed. Examples of use are given in the ``RandomPerson.py`` module:
+so long as Python is installed.
 
->>> python RandomPerson.py
+>>> pip install pyyaml
+
+should be run before the first execution.
+
+Examples of use are given in the ``RandomContact.py`` module:
+
+>>> python randomContact.py
 
 
 Configurable
